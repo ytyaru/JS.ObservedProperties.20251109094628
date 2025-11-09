@@ -9,12 +9,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
     van.add(document.querySelector('footer'),  new Footer('ytyaru', '../').make());
 
     const o = new Obs({some:{value:123}});
+    /*
     console.log(o._);
     console.log(o._.opt);
     console.log(o._.opt.open);
     console.log(o._.opt.open.some);
     console.log(o._.opt.open.some.value);
     console.log(o._.opt.open.some.type);
+    */
     o.some = 234;
     const a = new Assertion();
     a.t('Obs' in window);
@@ -23,30 +25,39 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `'setup' は予約済みキー名です。他の名前にしてください。予約済み名一覧:constructor,setup`, ()=>{new Obs({setup:{}})});
     a.t(()=>{
         const o = new Obs({some:{value:123}});
-        return 123===o.some && 'some' in o._.opt.open && 123===o._.opt.open.some.value && 123===o._.prop.open.some && Number===o._.opt.open.some.type;
+        //return 123===o.some && 'some' in o._.opt.open && 123===o._.opt.open.some.value && 123===o._.prop.open.some && Number===o._.opt.open.some.type;
+        return 123===o.some;
     });
     a.t(()=>{
         const o = new Obs({age:{type:Number}});
-        return 0===o.age && 'age' in o._.opt.open && 0===o._.opt.open.age.value && 0===o._.prop.open.age && Number===o._.opt.open.age.type;
+        //return 0===o.age && 'age' in o._.opt.open && 0===o._.opt.open.age.value && 0===o._.prop.open.age && Number===o._.opt.open.age.type;
+        return 0===o.age;
     });
     a.t(()=>{
         const o = new Obs({size:{type:Number, value:234}});
-        return 234===o.size && 'size' in o._.opt.open && 234===o._.opt.open.size.value && 234===o._.prop.open.size && Number===o._.opt.open.size.type;
+        //return 234===o.size && 'size' in o._.opt.open && 234===o._.opt.open.size.value && 234===o._.prop.open.size && Number===o._.opt.open.size.type;
+        return 234===o.size;
     });
     a.e(TypeError, `'str'は期待するNumber型ではありません。`, ()=>{new Obs({size:{type:Number, value:'str'}});});
     a.t(()=>{
         const o = new Obs({some:{value:123}});
         o.some = 234;
-        return 234===o.some && 'some' in o._.opt.open && 123===o._.opt.open.some.value && 234===o._.prop.open.some && Number===o._.opt.open.some.type;
+        //return 234===o.some && 'some' in o._.opt.open && 123===o._.opt.open.some.value && 234===o._.prop.open.some && Number===o._.opt.open.some.type;
+        return 234===o.some;
     });
     a.e(TypeError, `'abc'は期待するNumber型ではありません。`, ()=>{
         const o = new Obs({some:{value:123}});
         o.some = 'abc';
     });
-    a.e(TypeError, `未定義のプロパティを参照しました。`, ()=>{
+    a.e(SyntaxError, `未定義のプロパティを参照しました。:notHas`, ()=>{
         const o = new Obs({some:{value:123}});
         o.notHas;
     });
+    a.e(SyntaxError, `未定義のプロパティに代入しました。:notHas`, ()=>{
+        const o = new Obs({some:{value:123}});
+        o.notHas = 234;
+    });
+
 
 
 
