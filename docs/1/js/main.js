@@ -18,6 +18,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     console.log(o._.opt.open.some.type);
     */
     o.some = 234;
+    o.setup({some:345});
     const a = new Assertion();
     a.t('Obs' in window);
     a.e(TypeError, `valueとtypeは少なくともいずれか一つ必要です。`, ()=>{new Obs({some:{}})});
@@ -57,6 +58,24 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const o = new Obs({some:{value:123}});
         o.notHas = 234;
     });
+    a.t(()=>{
+        const o = new Obs({name:{value:'山田'}, age:{value:24}});
+        const R = '山田'===o.name && 24===o.age;
+        o.setup({name:'鈴木', age:36})
+        //return 234===o.some && 'some' in o._.opt.open && 123===o._.opt.open.some.value && 234===o._.prop.open.some && Number===o._.opt.open.some.type;
+        return R && '鈴木'===o.name && 36===o.age;
+    });
+    a.t(()=>{
+        const o = new Obs({name:{value:'山田'}, age:{value:24}}, {message:{value:''}}, (i,o)=>{
+            o.message = `私の名は「${i.name}」、${i.age}歳です。`;
+        });
+        const R = '山田'===o.name && 24===o.age && `私の名は「${o.name}」、${o.age}歳です。`===o._.message;
+        o.setup({name:'鈴木', age:36})
+        //return 234===o.some && 'some' in o._.opt.open && 123===o._.opt.open.some.value && 234===o._.prop.open.some && Number===o._.opt.open.some.type;
+        return R && '鈴木'===o.name && 36===o.age && `私の名は「${o.name}」、${o.age}歳です。`===o._.message;
+    });
+
+
 
 
 

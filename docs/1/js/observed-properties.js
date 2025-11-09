@@ -1,7 +1,7 @@
 (function(){
 class ObservedProperties {
     constructor(options, update) {
-        this._ = {opt:{open:{},close:{}}, prop:{open:{},close:{}}, obj:{open:{},close:{}}, onSet:{open:{},close:{}}, onChange:{open:{},close:{}}, update:(o,c)=>{}};
+        this._ = {opt:{open:{},close:{}}, prop:{open:{},close:{}}, obj:{open:{},close:{}}, onSet:{open:{},close:{}}, onChange:{open:{},close:{}}, update:(i,o)=>{}};
         this.#checkKeys(options)
         this.#setDefaultOptions(options);
         if ('function'===typeof update) {this._.update = update;}
@@ -13,6 +13,7 @@ class ObservedProperties {
         for (let [k, v] of Object.entries(this._.opt.close)) {
             this.#makeDescriptor('close', k, v);
         }
+        this._.output = 0 < [...Object.keys(this._.opt.close)].length ? new ObservedProperties(this._.opt.close) : ({}); // 出力用（optionsで設定したプロパティの組合せで計算しupdateでセットした結果のプロパティ）
         console.log(this);
         return this.#makeProxy();
     }
@@ -41,92 +42,100 @@ class ObservedProperties {
     }
     setup(values) {// values:{name:value, name:value, ...}
         for (let [k, v] of Object.entries(values)) {
+            if (!(k in this._.prop.open)) {throw new SyntaxError(`未定義のプロパティに代入しました。:${prop}`)}
             // ToDo: 型、妥当性チェックする
-            Typed.valid(this._.opt[oc][k].type, v);
+            //Typed.valid(this._.opt[oc][k].type, v);
+            Typed.valid(this._.opt.open[k].type, v);
+            const oldValue = this._.prop.open[k];
             this._.prop.open[k] = v;
             //this._.obj.open[k] = v; // update()が毎回発火してしまうので使わぬようにする
+            if (k in this._.onSet.open) {this._.onSet.open[k](v, oldValue);}
+            if (k in this._.onChange.open&& value!==oldValue) {this._.onChange.open[k](v, oldValue);}
         }
-        this._.update(structuredClone(this._.prop.open), this._.prop.close);
+        return this.#update();
     }
     #update() {
-        if ('function'===typeof this._.update) {this._.update();}
+        if ('function'===typeof this._.update) {return this._.update(structuredClone(this._.prop.open, this._.output));}
     }
     #makeProxy() { return new Proxy(this, {
-            get: (target, prop, receiver)=>{
-                if ('_isProxy'===prop) {return true}
+        get: (target, prop, receiver)=>{
+            if ('_isProxy'===prop) {return true}
+            else if ('setup'===prop) {console.log(this.setup);return this.setup.bind(this);}
+            else {
                 const oc = '_'===prop ? 'close' : 'open';
                 //if (!(prop in this._.prop[oc])) {throw new SyntaxError(`存在しないプロパティ名'${prop}'を参照しました。`)}
                 if (!(prop in this._.prop[oc])) {throw new SyntaxError(`未定義のプロパティを参照しました。:${prop}`)}
 
                 return this._.prop[oc][prop];
-                /*
-                if ('_'===prop) {
-                    if (!(prop in this._.prop.close)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'を参照しました。`)}
-                    return this._.prop.close[prop];
-                } else {
-                    if (!(prop in target._.prop.open)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'を参照しました。`)}
-                    return target._.prop.open[prop];
-                }
-                //return this._.prop.open[prop];
-                //return this[prop];
-                */
-            },
-            set: (target, prop, value, receiver)=>{
-                const oc = '_'===prop ? 'close' : 'open';
-                if (!(prop in target._.prop[oc])) {throw new SyntaxError(`未定義のプロパティに代入しました。:${'close'===oc ? '_.' : ''}${prop}`)}
-                Typed.valid(target._.opt[oc][prop].type, value);
+            }
+            /*
+            if ('_'===prop) {
+                if (!(prop in this._.prop.close)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'を参照しました。`)}
+                return this._.prop.close[prop];
+            } else {
+                if (!(prop in target._.prop.open)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'を参照しました。`)}
+                return target._.prop.open[prop];
+            }
+            //return this._.prop.open[prop];
+            //return this[prop];
+            */
+        },
+        set: (target, prop, value, receiver)=>{
+            const oc = '_'===prop ? 'close' : 'open';
+            if (!(prop in target._.prop[oc])) {throw new SyntaxError(`未定義のプロパティに代入しました。:${'close'===oc ? '_.' : ''}${prop}`)}
+            Typed.valid(target._.opt[oc][prop].type, value);
 //                if ('valid' in target._.opt[oc][prop] && 'function'===typeof target._.opt[oc][prop].valid) { target._.opt[oc][prop].valid(value); }
-                //  && prop in target._.opt[oc].valid
-                const oldValue = target._.prop[oc][prop];
-                target._.prop[oc][prop] = value;
-                if (prop in target._.onSet[oc]) {target._.onSet[oc][prop](value, oldValue);}
-                if (prop in target._.onChange[oc]&& value!==oldValue) {target._.onChange[oc][prop](value, oldValue);}
+            //  && prop in target._.opt[oc].valid
+            const oldValue = target._.prop[oc][prop];
+            target._.prop[oc][prop] = value;
+            if (prop in target._.onSet[oc]) {target._.onSet[oc][prop](value, oldValue);}
+            if (prop in target._.onChange[oc]&& value!==oldValue) {target._.onChange[oc][prop](value, oldValue);}
+            target._.update();
+            /*
+            if ('_'===prop) {
+                if (!(prop in target._.prop.close)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'に代入しました。`)}
+                Typed.valid(target._.opt.close[prop].type, value);
+                const oldValue = target._.prop.close[prop];
+                target._.prop.close[prop] = value;
+                if (prop in target._.onSet.close) {target._.onSet.close[prop](value, oldValue);}
+                if (prop in target._.onChange.close&& value!==oldValue) {target._.onChange.close[prop](value, oldValue);}
                 target._.update();
-                /*
-                if ('_'===prop) {
-                    if (!(prop in target._.prop.close)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'に代入しました。`)}
-                    Typed.valid(target._.opt.close[prop].type, value);
-                    const oldValue = target._.prop.close[prop];
-                    target._.prop.close[prop] = value;
-                    if (prop in target._.onSet.close) {target._.onSet.close[prop](value, oldValue);}
-                    if (prop in target._.onChange.close&& value!==oldValue) {target._.onChange.close[prop](value, oldValue);}
-                    target._.update();
-                }
+            }
 //                console.log(this, this._.opt[oc][k].type);
-                if (!(prop in target._.prop.open)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'に代入しました。`)}
-                // ToDo: 型、妥当性チェックする
-                //Typed.valid(this._.opt[oc][k].type, value);
-                //Typed.valid(this._.opt.open[prop].type, value);
-                Typed.valid(target._.opt.open[prop].type, value);
-                //const oldValue = this._.prop[oc][k];
-                //const oldValue = this._.prop.open[prop];
-                const oldValue = target._.prop.open[prop];
-                //this._.prop[oc][k] = V;
-                //this._.prop.open[prop] = value;
-                target._.prop.open[prop] = value;
+            if (!(prop in target._.prop.open)) {throw new SyntaxError(`存在しないプロパティ名'${prop}'に代入しました。`)}
+            // ToDo: 型、妥当性チェックする
+            //Typed.valid(this._.opt[oc][k].type, value);
+            //Typed.valid(this._.opt.open[prop].type, value);
+            Typed.valid(target._.opt.open[prop].type, value);
+            //const oldValue = this._.prop[oc][k];
+            //const oldValue = this._.prop.open[prop];
+            const oldValue = target._.prop.open[prop];
+            //this._.prop[oc][k] = V;
+            //this._.prop.open[prop] = value;
+            target._.prop.open[prop] = value;
 //                if (k in this._.onSet[oc]) {this._.onSet[oc][k](V, oldValue);}
 //                if (k in this._.onChange[oc] && V!==oldValue) {this._.onChange[oc][k](V, oldValue);}
 //                if (prop in this._.onSet.open) {this._.onSet.open[prop](value, oldValue);}
 //                if (prop in this._.onChange.open && value!==oldValue) {this._.onChange.open[prop](value, oldValue);}
 //                this._.update();
-                if (prop in target._.onSet.open) {target._.onSet.open[prop](value, oldValue);}
-                if (prop in target._.onChange.open && value!==oldValue) {target._.onChange.open[prop](value, oldValue);}
-                target._.update();
-                */
-            },
-        });
-        /*
-        const target = {}
-        for (let k of Object.keys(this._.opt.open)) {
-            target[k] = this._.prop.open.[k];
-        }
-        for (let k of Object.keys(this._.opt.close)) {
-            target._.[k] = this._.prop.close.[k];
-        }
-        const target = {
-            ...this._.
-        }
-        */
+            if (prop in target._.onSet.open) {target._.onSet.open[prop](value, oldValue);}
+            if (prop in target._.onChange.open && value!==oldValue) {target._.onChange.open[prop](value, oldValue);}
+            target._.update();
+            */
+        },
+    });
+    /*
+    const target = {}
+    for (let k of Object.keys(this._.opt.open)) {
+        target[k] = this._.prop.open.[k];
+    }
+    for (let k of Object.keys(this._.opt.close)) {
+        target._.[k] = this._.prop.close.[k];
+    }
+    const target = {
+        ...this._.
+    }
+    */
     }
     #makeDescriptor(oc, k, v) {
         this._.prop[oc][k] = undefined;
