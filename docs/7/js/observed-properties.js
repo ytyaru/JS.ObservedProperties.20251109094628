@@ -46,7 +46,7 @@ class Quantity extends Number {// NaN,Infinityを制限できるし許容もで�
 //        const MAX = max ?? Number.MAX_VALUE;
 //        const MIN = min ?? unsafed ? (unsigned ? 0 : Number.MAX_VALUE*-1) : (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
 //        const MAX = max ?? unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER;
-        const MIN = min ?? (unsigned ? 0 : (unsafed ? Number.MAX_VALUE*-1 : Number.MIN_SAFE_INTEGER));
+        const MIN = min ?? (unsigned ? 0 : (unsafed ? -Number.MAX_VALUE : Number.MIN_SAFE_INTEGER));
         const MAX = max ?? (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER);
         console.log('unsigned:', unsigned, min, MIN)
         // unsafed/unsigned/bit と min/max が矛盾しないこと
@@ -111,7 +111,7 @@ class Integer extends Quantity {
 //        const MAX = max ?? unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1));
 //        const MIN = min ?? (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
 //        const MAX = max ?? Number.MAX_SAFE_INTEGER;
-        const MIN = min ?? (unsafed ? (unsigned ? 0 : Number.MAX_VALUE*-1) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)));
+        const MIN = min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)));
         const MAX = max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1)));
         // unsafed/unsigned/bit と min/max が矛盾しないこと
         validRange(MIN, min, 'min');
