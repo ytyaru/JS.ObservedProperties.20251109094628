@@ -1,17 +1,229 @@
 (function(){
+const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object.prototype.toString.call(v);
+const getFIError = (v,n,isI=false)=>new TypeError(`${n}はNumber型有限${isI ? '整' : '実'}数リテラル値(非NaN)であるべきです。:${v}`);
+const isNum = (v)=>'number'===typeof v || !Number.isNaN(v);
+const isFloat = (v,n)=>{if (!isNum(v) || !Number.isFinite(v)) {throw getFIError(v,n)} return true;};
+const isInt = (v,n)=>{if (!isNum(v) || !Number.isInteger(v)) {throw getFIError(v,n,true)} return true;};
+const isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v);
+const isNu = (v)=>[null,undefined].some(V=>V===v);
+const isNun = (v)=>[null,undefined].some(V=>V===v) || Number.isNaN(v);
+// プリミティブ値か（undefined,null,NaN,-+Infinityを除く。数値,文字列,論理値,配列,オブジェクト,BigInt,正規表現(/[a-z]/等の表現があるが実際はRegExpインスタンス故除外)）
+const isPrim = (v)=>null!==value && 'object'!==typeof v; // nullやundefinedもプリミティブ値だがそれらは除外する
+const primTypes = ()=>[Boolean,Number,BigInt,String,Integer,Float]; // プリミティブ型一覧(undefined,null,symbolを除く)
+const isPrimIns = (v)=>primTypes().some(T=>v instanceof T); // プリミティブ型インスタンスか
+class Float extends Number {
+    static validate(value, unsafed=false, unsigned=false, min=undefined, max=undefined, fig=0) {
+        console.log(value);
+        isFloat(value, 'value');
+//        if (!isFloat(value)) {throw new TypeError(`valueはNumber型有限実数リテラル値(非NaN)であるべきです。`)}
+        if ('boolean'!==typeof unsafed) {throw new TypeError(`unsafedは真偽値であるべきです。`)}
+        if ('boolean'!==typeof unsigned) {throw new TypeError(`unsignedは真偽値であるべきです。`)}
+//        if ('number'!==typeof value) {throw new TypeError(`valueはNumber型リテラル値の非NaN,非無限数であるべきです。`)}
+//        if(Number.isNaN(value)) {throw new TypeError(`valueはNaNは代入できません。`)}
+//        if(!Number.isFinite(value)) {throw new TypeError(`valueは無限数は代入できません。`)}
+//        if ('number'!==typeof min || Number.isNaN(min) || !Number.isFinite(min)) {throw new TypeError(`minはNumber型有限実数リテラル値(非NaN)であるべきです。`)}
+//        if ('number'!==typeof max || Number.isNaN(max) || !Number.isFinite(max)) {throw new TypeError(`maxはNumber型有限実数リテラル値(非NaN)であるべきです。`)}
+//        if (!isNu(min) || !isFloat(min)) {throw new TypeError(`minはNumber型有限実数リテラル値(非NaN)であるべきです。`)}
+//        if (!isNu(max) || !isFloat(max)) {throw new TypeError(`maxはNumber型有限実数リテラル値(非NaN)であるべきです。`)}
+        if (!isNu(min)) {isFloat(min, 'min')}
+        if (!isNu(max)) {isFloat(max, 'max')}
+        if (!(Number.isSafeInteger(fig) && -1<fig)) {throw new TypeError(`figは0以上の整数値であるべきです。`)}
+        // 整合性
+        //if(!unsafed && !Number.isSafeInteger(value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}// こうすると整数でなく少数が入った時に必ずエラーに成ってしまう。IsSafe()関数があれば良かったのに存在しない……
+        if(!unsafed && (value < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
+        if (unsafed && bit) {
+            console.warn(`unsafed=trueなら範囲制限なしになります。つまり、bit=0,min=undefined,max=undefinedになります。`)
+            min = undefined;
+            max = undefined;
+        }
+//        min = min ?? unsafed ? (unsigned ? 0 : Number.MIN_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2));
+//        max = max ?? unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1));
+        min = min ?? unsafed ? (unsigned ? 0 : Number.MIN_VALUE) : (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
+        max = max ?? unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER;
+        // unsafed/unsigned/bit と min/max が矛盾しないこと
+        if (min < min) {throw new RangeError(`minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。`)}
+        if (max < max) {throw new RangeError(`minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。`)}
+        return {
+            value: value, 
+            unsafed: unsafed,
+            unsigned: unsigned,
+            min: min,
+            max: max,
+            fig: fig,
+        };
+    }
+    constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined, fig=0) {
+        super(value);
+        //this.constructor.validate(value);
+        //const options = this.constructor.validate(value, unsafed, unsigned, min, max, fig);
+        this._ = Float.validate(value, unsafed, unsigned, min, max, fig);
+    }
+    validate(v) {return Float.validate(v ?? this.valueOf(), this._.unsafed, this._.unsigned, this._.min, this._.max, this._.fig);}
+//    validate() {return Float.validate(this.valueOf());}
+//    get valid() {return Float.validate(this.valueOf());}
+    /*
+    validate(value) {
+        if ('number'!==value) {throw new TypeError(`Number型リテラル値であるべきです。`)}
+        if(Number.isNaN(value)) {throw new TypeError(`NaNは代入できません。`)}
+        if(!Number.isFinite(value)) {throw new TypeError(`無限数は代入できません。`)}
+    }
+    */
+    // this.valueOf(); でリテラル値を返す
+}
+class Rate extends Float { constructor(value) {super(value, false, true, 0, 1)} }// 比率(0〜1の実数)
+class Percent extends Float { constructor(value, fig=0) {super(value, false, true, 0, 100, fig)} }// 百分率(0〜100の実数)
+class Fraction extends Number {// 分数
+    constructor(numerator, denominator) {
+        super(numerator/denominator);
+    }
+}
+class Ratio extends Number {// 割合(16:9, 1:1.414)
+    constructor(...values) {
+        this._
+    }
+}
+class Integer extends Number {
+    static validate(value, unsafed=false, unsigned=false, bit=0, min=undefined, max=undefined) {
+        /*
+        this.#checkArgs(value, unsafed, unsigned, bit, min, max);
+        this._ = {unsafed:unsafed, unsigned:unsigned, bit:bit, min:min, max:max};
+        this.#setupMinMax(min, max);
+        this.validate(value);
+        */
+        /*
+        if ('number'!==typeof value) {throw new TypeError(`Number型リテラル値であるべきです。`)}
+        if(Number.isNaN(value)) {throw new TypeError(`NaNは代入できません。`)}
+        if(!Number.isInteger(value)) {throw new TypeError(`非整数値は代入できません。`)}
+        */
+        // 引数確認
+        isInt(value,'value');
+//        if ('number'!==typeof value || Number.isNaN(value) || !Number.isInteger(value)) {throw new TypeError(`valueはNumber型有限整数リテラル値(非NaN)であるべきです。`)}
+        if ('boolean'!==typeof unsafed) {throw new TypeError(`unsafedは真偽値であるべきです。`)}
+        if ('boolean'!==typeof unsigned) {throw new TypeError(`unsignedは真偽値であるべきです。`)}
+        if ((Number.isInteger(bit) && -1<bit && bit<53)) {throw new TypeError(`bitは0〜52迄のNumber型整数値であるべきです。`)}
+        if (!isNu(min)) {isInt(min,'min')}
+        if (!isNu(max)) {isInt(max,'max')}
+//        if ('number'!==typeof min || Number.isNaN(min) || !Number.isInteger(min)) {throw new TypeError(`minはNumber型有限整数リテラル値(非NaN)であるべきです。`)}
+//        if ('number'!==typeof max || Number.isNaN(max) || !Number.isInteger(max)) {throw new TypeError(`maxはNumber型有限整数リテラル値(非NaN)であるべきです。`)}
+        // 整合性
+        if(!unsafed && !Number.isSafeInteger(value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
+        if (unsafed && bit) {
+            console.warn(`unsafed=trueなら範囲制限なしになります。つまり、bit=0,min=undefined,max=undefinedになります。`)
+            bit = 0;
+            min = undefined;
+            max = undefined;
+        }
+        min = min ?? unsafed ? (unsigned ? 0 : Number.MIN_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2));
+        max = max ?? unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1));
+        // unsafed/unsigned/bit と min/max が矛盾しないこと
+        if (min < min) {throw new RangeError(`minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。`)}
+        if (max < max) {throw new RangeError(`minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。`)}
+        return {
+            value: value, 
+            unsafed: unsafed,
+            unsigned: unsigned,
+            bit: bit,
+            min: min,
+            max: max,
+        };
+    }
+    /*
+    static validate(value) {
+        if ('number'!==typeof value) {throw new TypeError(`Number型リテラル値であるべきです。`)}
+        if(Number.isNaN(value)) {throw new TypeError(`NaNは代入できません。`)}
+        if(!Number.isInteger(value)) {throw new TypeError(`非整数値は代入できません。`)}
+        if(!this._.unsafed && !Number.isSafeInteger(value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
+        return true;
+    }
+    */
+    constructor(value, unsafed=false, unsigned=false, bit=0, min=undefined, max=undefined) {
+        super(value);
+        this.#checkArgs(value, unsafed, unsigned, bit, min, max);
+        this._ = {unsafed:unsafed, unsigned:unsigned, bit:bit, min:min, max:max};
+        this.#setupMinMax(min, max);
+        this.validate(value);
+    }
+    #checkArgs(value, unsafed, unsigned, bit, min, max) {
+        this.validate();
+        if ('boolean'!==typeof unsafed) {throw new TypeError(`unsafedは真偽値であるべきです。`)}
+        if ('boolean'!==typeof unsigned) {throw new TypeError(`unsignedは真偽値であるべきです。`)}
+        if ((Number.isInteger(bit) && -1<bit && bit<53)) {throw new TypeError(`bitは0〜52迄のNumber型整数値であるべきです。`)}
+        if (unsafed && bit) {
+            console.warn(`unsafed=trueなら範囲制限なしになります。つまり、bit=0,min=undefined,max=undefinedになります。`)
+            this._.bit = 0;
+            this._.min = undefined;
+            this._.max = undefined;
+        }
+    }
+    get unsafed() {return this._.unsafed}
+    get unsigned() {return this._.unsigned}
+    get bit() {return this._.bit}
+    validate(v) {return Integer.validate(v ?? this.valueOf(), this._.unsafed, this._.unsigned, this._.bit, this._.min, this._.max);}
+//    get valid() {return Integer.validate(this.valueof());}
+//    validate() {Integer.validate(this.valueof());}
+    /*
+    validate() {
+        if ('number'!==value) {throw new TypeError(`Number型リテラル値であるべきです。`)}
+        if(Number.isNaN(value)) {throw new TypeError(`NaNは代入できません。`)}
+        if(!Number.isInteger(value)) {throw new TypeError(`非整数値は代入できません。`)}
+        if(!this._.unsafed && !Number.isSafeInteger(value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
+    }
+    */
+    #setupMinMax(min, max) {// unsafed, unsigned, bit から min, max を算出する
+        this._.min = this._.min ?? this._.unsafed ? (this._.unsigned ? 0 : Number.MIN_VALUE) : (this._.unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2));
+        this._.max = this._.max ?? this._.unsafed ? Number.MAX_VALUE : (this._.unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1));
+        // unsafed/unsigned/bit と min/max が矛盾しないこと
+        if (this._.min < min) {throw new RangeError(`minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。`)}
+        if (max < this._.max) {throw new RangeError(`minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。`)}
+        /*
+        //if (this._.unsafed) {this._.min = Number.MIN_VALUE; this._.max = Number.MAX_VALUE;}
+        if (this._.unsafed) {this._.min = this._.min ?? this._.unsigned ? 0 : Number.MIN_VALUE; this._.max = this._.max ?? Number.MAX_VALUE;}
+        else {
+            if (this._.unsigned) {
+                this._.min = thi._.min ?? 0;
+                //this._.max = thi._.max ?? (Number.isInteger(bit) && 0<bit && bit<53) ? (2**bit)-1  : Number.MAX_SAFE_INTEGER;
+                this._.max = thi._.max ?? 0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1;
+            } else {
+//                this._.min = thi._.min ?? (Number.isInteger(bit) && 0<bit && bit<53) ? -(2**bit)/2 : Number.MIN_SAFE_INTEGER;
+//                this._.max = thi._.max ?? (Number.isInteger(bit) && 0<bit && bit<53) ? ((2**bit)/2)-1 : Number.MAX_SAFE_INTEGER;
+                this._.min = thi._.min ?? 0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2;
+                this._.max = thi._.max ?? 0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1;
+            }
+        }
+        */
+    }
+    // this.valueOf(); でリテラル値を返す
+}
+// 乱数は疑似乱数であり複数の方式やサイズ等があるため、プリミティブ型に相応しいはず。但し参照する度に乱数を返すべいなのだとしたら、同じ値を参照できなくなってしまう。
+/*
+class RandomRate extends Rate {
+}
+class RandomInt extends Integer {
+}
+*/
+// IDは整数値だけでなく文字列表現にしたい場合もあるためvalueOf()でリテラル値を取得するプリミティブ変数にするのは不適切か。
+/*
+class Id extends Integer {
+}
+class Uuid extends Integer {
+}
+class Ulid extends Integer {
+}
+*/
+
+
+
+
 class FixObservedProperties {// 定数専用
     constructor(options) {
-        this._ = {opt:{}, prop:{}};
-        this.#checkArgs(iOpt, oOpt, update);
-        this.#checkKeys(iOpt)
-        this.#setDefaultOptions(iOpt);
+        this._ = {opt:{}, prop:{}, primIns:{}};
+        this.#checkArgs(options);
+        this.#checkKeys(options)
+        this.#setDefaultOptions(options);
         for (let [k, v] of Object.entries(this._.opt)) { this.#makeDescriptor(k, v); }
-        this._.oOpt = ([undefined,null].some(v=>v===oOpt)) ? ({}) : (oOpt instanceof ObservedProperties) ? oOpt : new ObservedProperties(oOpt);
-        if ('function'===typeof update) {this._.update = update;}
         return this.#makeProxy();
     }
-    #checkArgs(options, oOpt, update) {
-        const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object.prototype.toString.call(v);
+    #checkArgs(options) {
         if (!isObj(options)) {throw new TypeError(`第一引数optionsはプロパティ名とその型などの情報を持つオブジェクトであるべきです。例:{name:{value:''}, age:{value:0, valid:Obs.valid.range(0,100)}}`)}
     }
     #checkKeys(options) {
@@ -19,10 +231,23 @@ class FixObservedProperties {// 定数専用
         const keys = [...Object.keys(options)];
         for (let key of Object.keys(options)) {if (reserveds.some(r=>r===key)) {throw new TypeError(`'${key}' は予約済みキー名です。他の名前にしてください。予約済み名一覧:${reserveds.join(',')}`)}}
     }
+    
     #setDefaultOptions(options) {
         for (let [k, v] of Object.entries(options)) {
-            if (options.hasOwnProperty('value') && options.value instanceof ObservedProperties) {continue}
+            if (!isObj(options[k])) { options[k] = {value:v}; v = {value:v}; }
+            if (options[k].hasOwnProperty('value') && options[k].value instanceof ObservedProperties) {continue}
             console.log(k, v);
+            if (!options[k].hasOwnProperty('value') && !options[k].hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
+            else if (options[k].hasOwnProperty('value') && !options[k].hasOwnProperty('type')) {
+                options[k].type = Typed.getTypeFromValue(options[k].value);
+            }
+            else if (!options[k].hasOwnProperty('value') && options[k].hasOwnProperty('type')) {
+                options[k].value = Typed.defaultValue(options[k].type);
+            }
+            // プリミティブ型インスタンスだった場合
+            console.log('isPrimIns(v.value):', isPrimIns(v.value), v);
+            if (isPrimIns(v.value)) {this._.primIns[k] = v.value; options[k].value = v.value.valueOf();}
+            /*
             if (!v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
             else if (v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {
                 options[k].type = Typed.getTypeFromValue(v.value);
@@ -30,6 +255,7 @@ class FixObservedProperties {// 定数専用
             else if (!v.hasOwnProperty('value') && v.hasOwnProperty('type')) {
                 options[k].value = Typed.defaultValue(v.type);
             }
+            */
         }
         this._.opt = options;
     }
@@ -64,7 +290,7 @@ class FixObservedProperties {// 定数専用
 }
 class ObservedProperties {
     constructor(iOpt, oOpt, update) {
-        this._ = {opt:{}, prop:{}, onSet:{}, onChange:{}, update:(i,o)=>{}};
+        this._ = {opt:{}, prop:{}, primIns:{}, onSet:{}, onChange:{}, update:(i,o)=>{}};
         this.#checkArgs(iOpt, oOpt, update);
         this.#checkKeys(iOpt)
         this.#setDefaultOptions(iOpt);
@@ -90,6 +316,10 @@ class ObservedProperties {
     }
     #setDefaultOptions(iOpt) {
         for (let [k, v] of Object.entries(iOpt)) {
+            //if (!isObj(iOpt[k])) { iOpt[k] = {value:v}; v = {value:v}; }
+            if (!isObj(iOpt[k])) {
+                iOpt[k] = {value:v}; v = {value:v};
+            }
             if (iOpt.hasOwnProperty('value') && iOpt.value instanceof ObservedProperties) {continue}
             console.log(k, v);
             if (!v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
@@ -99,6 +329,9 @@ class ObservedProperties {
             else if (!v.hasOwnProperty('value') && v.hasOwnProperty('type')) {
                 iOpt[k].value = Typed.defaultValue(v.type);
             }
+            // プリミティブ型インスタンスだった場合
+            //if (isPrimIns(v)) {this._.primIns[k] = v; options[k].value = v.valueOf();}
+            if (isPrimIns(v.value)) {this._.primIns[k] = v.value; options[k].value = v.value.valueOf();}
         }
         this._.opt = iOpt;
     }
@@ -108,6 +341,9 @@ class ObservedProperties {
             if (!(k in this._.prop)) {throw new SyntaxError(`未定義のプロパティに代入しました。:${prop}`)}
             // ToDo: 型、妥当性チェックする
             Typed.valid(this._.opt[k].type, v);
+            // 独自プリミティブ型インスタンスだった場合(Int,Float)
+//            if (isPrimIns(v) && 'validate' in v) {this._.primIns[k].validate(v);}
+            if (k in this._.primIns) {this._.primIns[k].validate(v)}
             const oldValue = this._.prop[k];
             this._.prop[k] = v;
             //this._.obj.open[k] = v; // update()が毎回発火してしまうので使わぬようにする
@@ -133,6 +369,9 @@ class ObservedProperties {
             console.log(target._.prop, this._.prop, target, this);
             if (!(prop in target._.prop)) {throw new SyntaxError(`未定義のプロパティに代入しました。:${prop}`)}
             Typed.valid(target._.opt[prop].type, value);
+            // 独自プリミティブ型インスタンスだった場合(Int,Float)
+            if (prop in this._.primIns) {this._.primIns[prop].validate(value)}
+//            if (isPrimIns(value) && 'validate' in value) {this._.primIns[k].validate(value);}
             const oldValue = target._.prop[prop];
             target._.prop[prop] = value;
             if (prop in target._.onSet) {target._.onSet[prop](value, oldValue);}
@@ -152,6 +391,9 @@ class ObservedProperties {
                 console.log(this, this._.opt[k].type);
                 // ToDo: 型、妥当性チェックする
                 Typed.valid(this._.opt[k].type, V);
+                // 独自プリミティブ型インスタンスだった場合(Int,Float)
+                //if (isPrimIns(v) && 'validate' in v) {this._.primIns[k].validate(v);}
+                if (k in this._.primIns) {this._.primIns[k].validate(v)}
                 const oldValue = this._.prop[k];
                 this._.prop[k] = V;
                 if (k in this._.onSet) {this._.onSet[k](V, oldValue);}
@@ -220,9 +462,13 @@ class Typed {
 //        this.#validObject(type, value);
         if (!nullable && null===value) {throw new TypeError(`許容していないのにnullです。`)}
         if (!undefinedable && undefined===value) {throw new TypeError(`許容していないのにundefinedです。`)}
-        if (Number===type && !nanable && Number.isNaN(value)) {throw new TypeError(`許容していないのにNaNです。`)}
-        if (Number===type && !infinitable && (Infinity===value || -Infinity===value)) {throw new TypeError(`許容していないのに無限数です。`)}
-        if (Number===type && !unsafable && (!Number.isSafeInteger(value))) {throw new TypeError(`許容していないのに非安全な整数値です。`)}
+//        if (Number===type && !nanable && Number.isNaN(value)) {throw new TypeError(`許容していないのにNaNです。`)}
+//        if (Number===type && !infinitable && (Infinity===value || -Infinity===value)) {throw new TypeError(`許容していないのに無限数です。`)}
+//        if (Number===type && !unsafable && (!Number.isSafeInteger(value))) {throw new TypeError(`許容していないのに非安全な整数値です。`)}
+//        if ([Float,Rate,Ratio,Fraction,Int].some(c=>c===instance.constructor)) {instance.valid(value)}
+//        if ([Boolean,Number,String,BigInt,Symbol].some(t=>t===v.constructor)) {v.valueOf()}
+//        if (null!==value && 'object'===typeof value && 'valid' in value && 'function'===typeof value.valid) {value.valid()}
+//        if (null!==value && 'object'===typeof value && 'validate' in value && 'function'===typeof value.validate) {value.validate()}
     }
     static #validType(type, value) {
         console.log(type, value, Number===type, 'number'!==typeof value, typeof value);
@@ -268,26 +514,88 @@ class Valid {
 
     }
 }
-
+// ins instanceof Int ができない
+//window.Int = (...args)=>new Integer(...args);
+//window.Float = (...args)=>new Float(...args);
+// ins instanceof Int できる
+window.Integer = Integer;
+window.Float = Float;
 window.Obs = new Proxy({
     version: '0.0.1',
     summary: 'Observerオブジェクトを生成します。リアクティブ・プログラミングに最適です。',
     example: `
 const o = Obs.var({name:{value:'Bob'}, age:{value:12}}, {msg:{value:''}}, (i,o)=>o.msg=\`My name is \${i.name}, \${i.age} years old.\`);
+console.assert('Bob'===o.name);
+console.assert(12===o.age);
 console.assert('My name is Bob, 12 years old.'===o.$.msg);
-o.name = 'John';
-o.age = 24;
+o.name = 'John'; // update.
+o.age = 24;      // update.
+console.assert('John'===o.name);
+console.assert(24===o.age);
 console.assert('My name is John, 24 years old.'===o.$.msg);
 // o.name = 3; // TypeError
 // o.notHas; // SyntaxError
+o.setup({name:'Andy', age:36}); // Once update.
+console.assert('Andy'===o.name);
+console.assert(36===o.age);
+console.assert('My name is Andy, 36 years old.'===o.$.msg);
 
 const MATH = Obs.fix({PI:{value:3.14}});
 console.assert(3.14===MATH.PI);
-MATH.PI; // 3.14
-MATH.PI = 3.14159; // SyntaxError
+// MATH.PI = 3.14159; // SyntaxError
 `,
     var: (...args)=>new ObservedProperties(...args),
     fix: (...args)=>new FixObservedProperties(...args),
+    C: {// C=Class
+        I: Integer,
+        Int: Integer,
+        Integer: Integer,
+        F: Float,
+        Flt: Float,
+        Float: Float,
+    },
+    T: {// T=Type
+        i:(...args)=>new Integer(...args),
+        int:(...args)=>new Integer(...args),
+        integer:(...args)=>new Integer(...args),
+        f:(...args)=>new Float(...args),
+        flt:(...args)=>new Float(...args),
+        float:(...args)=>new Float(...args),
+    },
+    /*
+    N: {// N=New
+        i:(...args)=>new Integer(...args),
+        int:(...args)=>new Integer(...args),
+        integer:(...args)=>new Integer(...args),
+        f:(...args)=>new Integer(...args),
+        flt:(...args)=>new Integer(...args),
+        float:(...args)=>new Integer(...args),
+    },
+    I: {// I=Instance
+        i:(...args)=>new Integer(...args),
+        int:(...args)=>new Integer(...args),
+        integer:(...args)=>new Integer(...args),
+        f:(...args)=>new Integer(...args),
+        flt:(...args)=>new Integer(...args),
+        float:(...args)=>new Integer(...args),
+    },
+    T: {// T=Type
+        I:(...args)=>new Integer(...args),
+        Int:(...args)=>new Integer(...args),
+        Integer:(...args)=>new Integer(...args),
+        F:(...args)=>new Integer(...args),
+        Flt:(...args)=>new Integer(...args),
+        Float:(...args)=>new Integer(...args),
+    },
+    T: {// T=Type
+        i:(...args)=>new Integer(...args),
+        int:(...args)=>new Integer(...args),
+        integer:(...args)=>new Integer(...args),
+        f:(...args)=>new Float(...args),
+        flt:(...args)=>new Float(...args),
+        float:(...args)=>new Float(...args),
+    },
+    */
 }, {
     get:(target, prop, receiver)=>{
         console.log([...Object.keys(target)]);

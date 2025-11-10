@@ -29,10 +29,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
     const a = new Assertion();
     a.t('Obs' in window);
     a.e(TypeError, `valueとtypeは少なくともいずれか一つ必要です。`, ()=>{Obs.var({some:{}})});
-//    a.e(TypeError, `'constructor' は予約済みキー名です。他の名前にしてください。予約済み名一覧:constructor,setup`, ()=>{Obs.var({constructor:{}})});
-//    a.e(TypeError, `'setup' は予約済みキー名です。他の名前にしてください。予約済み名一覧:constructor,setup`, ()=>{Obs.var({setup:{value:0}})});
-//    a.e(TypeError, `'$' は予約済みキー名です。他の名前にしてください。予約済み名一覧:constructor,setup`, ()=>{Obs.var({'$':{value:0}})});
-//    a.e(TypeError, `'_isProxy' は予約済みキー名です。他の名前にしてください。予約済み名一覧:constructor,setup`, ()=>{Obs.var({_isProxy:{value:0}})});
     const RESERVED = 'setup,$,_isProxy';
     a.e(TypeError, `'setup' は予約済みキー名です。他の名前にしてください。予約済み名一覧:${RESERVED}`, ()=>{Obs.var({setup:{value:0}})});
     a.e(TypeError, `'$' は予約済みキー名です。他の名前にしてください。予約済み名一覧:${RESERVED}`, ()=>{Obs.var({'$':{value:0}})});
@@ -98,7 +94,26 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return R && '鈴木'===o.name && 36===o.age && `私の名は「${o.name}」、${o.age}歳です。`===o.$.message;
     });
 
-
+    a.t(()=>{
+        const o = Obs.var({age:0});
+        const R0 = 0===o.age;
+        o.age = 1;
+        const R1 = 1===o.age;
+        o.age = 1.2;
+        const R2 = 1.2===o.age;
+        return R0 && R1 && R2;
+    });
+    // Fix
+    //const MATH = Obs.fix({PI:3.14});
+    //const MATH = Obs.fix({PI:Float(3.14)});
+    const MATH = Obs.fix({PI:Obs.T.float(3.14)});
+    a.t(()=>{
+        //const MATH = Obs.fix({PI:Float(3.14)});
+        const MATH = Obs.fix({PI:Obs.T.float(3.14)});
+        console.log(MATH.PI);
+        return 3.14===MATH.PI;
+        
+    });
 
 
 
