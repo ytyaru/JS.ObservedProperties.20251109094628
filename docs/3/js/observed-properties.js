@@ -1,6 +1,5 @@
 (function(){
-/*
-class FixedProperties {// 定数専用
+class FixObservedProperties {// 定数専用
     constructor(options) {
         this._ = {opt:{}, prop:{}};
         this.#checkArgs(iOpt, oOpt, update);
@@ -9,13 +8,60 @@ class FixedProperties {// 定数専用
         for (let [k, v] of Object.entries(this._.opt)) { this.#makeDescriptor(k, v); }
         this._.oOpt = ([undefined,null].some(v=>v===oOpt)) ? ({}) : (oOpt instanceof ObservedProperties) ? oOpt : new ObservedProperties(oOpt);
         if ('function'===typeof update) {this._.update = update;}
-        this.#update();
-        console.log(this);
         return this.#makeProxy();
     }
-
+    #checkArgs(options, oOpt, update) {
+        const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object.prototype.toString.call(v);
+        if (!isObj(options)) {throw new TypeError(`第一引数optionsはプロパティ名とその型などの情報を持つオブジェクトであるべきです。例:{name:{value:''}, age:{value:0, valid:Obs.valid.range(0,100)}}`)}
+    }
+    #checkKeys(options) {
+        const reserveds = ['_isProxy'];
+        const keys = [...Object.keys(options)];
+        for (let key of Object.keys(options)) {if (reserveds.some(r=>r===key)) {throw new TypeError(`'${key}' は予約済みキー名です。他の名前にしてください。予約済み名一覧:${reserveds.join(',')}`)}}
+    }
+    #setDefaultOptions(options) {
+        for (let [k, v] of Object.entries(options)) {
+            if (options.hasOwnProperty('value') && options.value instanceof ObservedProperties) {continue}
+            console.log(k, v);
+            if (!v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
+            else if (v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {
+                options[k].type = Typed.getTypeFromValue(v.value);
+            }
+            else if (!v.hasOwnProperty('value') && v.hasOwnProperty('type')) {
+                options[k].value = Typed.defaultValue(v.type);
+            }
+        }
+        this._.opt = options;
+    }
+    #makeDescriptor(k, v) {
+        this._.prop[k] = undefined;
+        const isObs = (v instanceof ObservedProperties);
+        const desc = {
+            configurable: false,
+            enumerable: true,
+            get: ()=>this._.prop[k],
+            set: (V)=>{throw new SyntaxError(`定数に代入はできません。`)},
+        };
+        if (!isObs) {// ToDo: 型、妥当性チェックする
+            Typed.valid(this._.opt[k].type, v.value);
+        }
+        this._.prop[k] = v.value;
+        Object.defineProperty(this, k, desc); // どうせProxyを返すから使わないはずだが念の為に用意する。
+    }
+    #makeProxy() { return new Proxy(this, {
+        get: (target, prop, receiver)=>{
+            if ('_isProxy'===prop) {return true}
+//            else if ('$'===prop) {console.log(this._.oOpt);return this._.oOpt;}
+//            else if ('setup'===prop) {console.log(this.setup);return this.setup.bind(this);}
+            else {
+                if (!(prop in this._.prop)) {throw new SyntaxError(`未定義のプロパティを参照しました。:${prop}`)}
+                return this._.prop[prop];
+            }
+        },
+        set: (target, prop, value, receiver)=>{throw new SyntaxError(`定数に代入はできません。`);},
+    });
+    }
 }
-*/
 class ObservedProperties {
     constructor(iOpt, oOpt, update) {
         this._ = {opt:{}, prop:{}, onSet:{}, onChange:{}, update:(i,o)=>{}};
