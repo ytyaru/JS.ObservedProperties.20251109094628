@@ -8,6 +8,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     );
     van.add(document.querySelector('footer'),  new Footer('ytyaru', '../').make());
 
+    const o0 = Obs.var({age:0});
+    o0.age = 1;
     console.log(Obs)
 //    console.log(Obs.var)
 //    console.log(Obs.var())

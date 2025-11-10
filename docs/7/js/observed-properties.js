@@ -7,7 +7,10 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
     isBool = (v,n)=>{if ('boolean'!==typeof v) {throw new TypeError(`${n}は真偽値であるべきです。:${v}`)}}
     validRange = (expected, actual, name)=>{
         if (!'min max'.split(' ').some(v=>v===name)) {throw new TypeError('nameはminかmaxのみ有効です。')}
-        if (actual < expected) {throw new RangeError(`${name}はunsigned,bitで設定した範囲より${'min'===name ? '小さい' : '大きい'}です。範囲内に指定してください。`)}
+        const isOver = 'min'===name ? actual < expected : expected < actual;
+        //const isOver = 'min'===name ? expected < actual : actual < expected;
+        if (isOver) {throw new RangeError(`${name}はunsigned,bitで設定した範囲より${'min'===name ? '小さい' : '大きい'}です。範囲内に指定してください。:expected:${expected}, actual:${actual}`)}
+        //if (actual < expected) {throw new RangeError(`${name}はunsigned,bitで設定した範囲より${'min'===name ? '小さい' : '大きい'}です。範囲内に指定してください。:expected:${expected}, actual:${actual}`)}
     },
     isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v),
     isNu = (v)=>[null,undefined].some(V=>V===v),
@@ -35,13 +38,22 @@ class Quantity extends Number {// NaN,Infinityを制限できるし許容もで�
             min = undefined;
             max = undefined;
         }
-        const MIN = min ?? unsafed ? (unsigned ? 0 : Number.MIN_VALUE) : (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
-        const MAX = max ?? unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER;
+//        const MIN = min ?? unsafed ? (unsigned ? 0 : Number.MIN_VALUE) : (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
+//        const MAX = max ?? unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER;
+//        const MIN = min ?? (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
+//        const MAX = max ?? Number.MAX_SAFE_INTEGER;
+//        const MIN = min ?? (unsigned ? 0 : Number.MAX_VALUE*-1);
+//        const MAX = max ?? Number.MAX_VALUE;
+//        const MIN = min ?? unsafed ? (unsigned ? 0 : Number.MAX_VALUE*-1) : (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
+//        const MAX = max ?? unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER;
+        const MIN = min ?? (unsigned ? 0 : (unsafed ? Number.MAX_VALUE*-1 : Number.MIN_SAFE_INTEGER));
+        const MAX = max ?? (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER);
+        console.log('unsigned:', unsigned, min, MIN)
         // unsafed/unsigned/bit と min/max が矛盾しないこと
         validRange(MIN, min, 'min');
         validRange(MAX, max, 'max');
         return {
-            value: value, 
+            value: value,
             naned: naned,
             infinited: infinited,
             unsafed: unsafed,
@@ -51,11 +63,11 @@ class Quantity extends Number {// NaN,Infinityを制限できるし許容もで�
             fig: fig,
         };
     }
-    constructor(value, nanable=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined, fig=0) {
+    constructor(value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined, fig=0) {
         super(value);
-        Quantity.validate(value, nanable, infinited, unsafed, unsigned, min, max, fig);
+        this._ = Quantity.validate(value, naned, infinited, unsafed, unsigned, min, max, fig);
     }
-    validate(v) {return this.constructor.validate(v ?? this.valueOf(), this._.unsafed, this._.unsigned, this._.min, this._.max, this._.fig);}
+    validate(v) {return Quantity.validate(v ?? this.valueOf(), this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max, this._.fig);}
     toFixed(fig) {return super.toFixed(fig ?? this._.fig)}
 }
 //class Finite extends Quantity {// NaN,Infinityを制限した有限数
@@ -66,6 +78,13 @@ class Float extends Quantity {// NaN,Infinityを制限した有限数
     constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined, fig=0) {
         super(value, false, false, unsafed, unsigned, min, max, fig);
     }
+    /*
+    equal(x, y) {
+        const T = parseInt(Math.abs(x + y));
+        const tolerance = T < 1 ? Number.EPSILON : Number.EPSILON * T;
+        return Math.abs(x - y) < tolerance;
+    }
+    */
 }
 class Rate extends Float { constructor(value) {super(value, false, true, 0, 1)} }// 比率(0〜1の実数)
 class Percent extends Float { constructor(value, fig=0) {super(value, false, true, 0, 100, fig)} }// 百分率(0〜100の実数)
@@ -88,8 +107,12 @@ class Integer extends Quantity {
         return {...Quantity.validate(value, false, false, unsafed, unsigned, min, max, 0), ...this.validateMinMax(unsafed, unsigned, bit, min, max)};
     }
     static validateMinMax(unsafed, unsigned, bit, min, max) {
-        const MIN = min ?? unsafed ? (unsigned ? 0 : Number.MIN_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2));
-        const MAX = max ?? unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1));
+//        const MIN = min ?? unsafed ? (unsigned ? 0 : Number.MIN_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2));
+//        const MAX = max ?? unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1));
+//        const MIN = min ?? (unsigned ? 0 : Number.MIN_SAFE_INTEGER);
+//        const MAX = max ?? Number.MAX_SAFE_INTEGER;
+        const MIN = min ?? (unsafed ? (unsigned ? 0 : Number.MAX_VALUE*-1) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)));
+        const MAX = max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1)));
         // unsafed/unsigned/bit と min/max が矛盾しないこと
         validRange(MIN, min, 'min');
         validRange(MAX, max, 'max');
@@ -188,7 +211,20 @@ class FixObservedProperties {// 定数専用
     }
     #setDefaultOptions(options) {
         for (let [k, v] of Object.entries(options)) {
-            if (!isObj(options[k])) { options[k] = {value:v}; v = {value:v}; }
+            //if (!isObj(options[k])) { options[k] = {value:v}; v = {value:v}; }
+            if (!isObj(options[k])) { // {value:'', type:String}ではなく直接value値をセットした場合
+                //const V = ('number'===typeof options[k] && !Number.isNaN(options[k]) && Number.isFinite(options[k])) ? new Float(v) : v;
+                const V = ('number'===typeof v && !Number.isNaN(v) && Number.isFinite(v)) ? new Float(v) : v;
+                options[k] = {value:V}; v = {value:V};
+                /*
+                if ('number'===typeof && !Number.isNaN(options[k]) && Number.isFinite(options[k])) {
+                    const F = new Float(v);
+                    options[k] = {value:F}; v = {value:F};
+                } else {options[k] = {value:v}; v = {value:v};}
+                if (isNun(options[k])) {}
+                options[k] = {value:v}; v = {value:v};
+                */
+            }
             if (options[k].hasOwnProperty('value') && options[k].value instanceof ObservedProperties) {continue}
             console.log(k, v);
             if (!options[k].hasOwnProperty('value') && !options[k].hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
@@ -258,9 +294,15 @@ class ObservedProperties {
     }
     #setDefaultOptions(iOpt) {
         for (let [k, v] of Object.entries(iOpt)) {
+            /*
             //if (!isObj(iOpt[k])) { iOpt[k] = {value:v}; v = {value:v}; }
             if (!isObj(iOpt[k])) {
                 iOpt[k] = {value:v}; v = {value:v};
+            }
+            */
+            if (!isObj(iOpt[k])) { // {value:'', type:String}ではなく直接value値をセットした場合
+                const V = ('number'===typeof v && !Number.isNaN(v) && Number.isFinite(v)) ? new Float(v) : v;
+                iOpt[k] = {value:V}; v = {value:V};
             }
             if (iOpt.hasOwnProperty('value') && iOpt.value instanceof ObservedProperties) {continue}
             console.log(k, v);
@@ -273,7 +315,7 @@ class ObservedProperties {
             }
             // プリミティブ型インスタンスだった場合
             //if (isPrimIns(v)) {this._.primIns[k] = v; options[k].value = v.valueOf();}
-            if (isPrimIns(v.value)) {this._.primIns[k] = v.value; options[k].value = v.value.valueOf();}
+            if (isPrimIns(v.value)) {this._.primIns[k] = v.value; iOpt[k].value = v.value.valueOf();}
         }
         this._.opt = iOpt;
     }
