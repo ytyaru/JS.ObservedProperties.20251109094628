@@ -74,7 +74,7 @@ class Quantity extends Number {// NaN,Infinityを制限できるし許容もで�
     toFixed(fig) {return super.toFixed(fig ?? this._.fig)}
     //valueOf() {return Number(this.toFixed())}
     valueOf() {return this.value}
-    get value() {return Number(this._.value.toString().toFixed(this._.fig))}
+    get value() {return Number(this._.value.toFixed(this._.fig))}
     set value(v) {
         Quantity.validate(v, this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max, this._.fig);
         this._.value = Number(v.toString().toFixed(this._.fig))
@@ -301,6 +301,7 @@ class FixObservedProperties {// 定数専用
                 }
                 */
                 //if ('number'===typeof v && [Float,Integer].some(t=>t===v.constructor)) {
+                    /*
                 if ('number'===typeof v) {
                     if (Number.isSafeInteger(v)) {
                         const V = new Integer(v);
@@ -315,6 +316,34 @@ class FixObservedProperties {// 定数専用
 //                    options[k] = {value:V}; v = {value:V};
                     options[k] = {value:v}; v = {value:v};
                 }
+                */
+                /*
+                if ('number'===typeof v) {
+                    if (Number.isSafeInteger(v)) {
+                        this._.primIns[k] = new Integer(v);
+                        this._.primIns[k].validate();
+                        const V = this._.primIns[k].valueOf();
+                        iOpt[k] = {value:V}; v = {value:V};
+                    } else {
+                        throw new TypeError(`Number型リテラル値を直接指定した時は{value:Integer(999)}等の省略形と見做します。しかし指定された値は非Integer値でした。:${v}\nNumber.isSafeInteger()が真を返す範囲内か、少数値でないか等を確認してください。\n少数を使用するなら{weight:Float(62.1)}のように書いてください。`);
+                    }
+                } else { // null, undefined, Symbol, Boolean(true/false), BigInt(1n), String('a'), {k:'v'}, ['v'], new Map([['k','v']]), 等
+                    iOpt[k] = {value:v}; v = {value:v};
+                }
+                */
+                if (!isObj(options[k])) { // {value:'', type:String}ではなく直接value値をセットした場合
+                    if ('number'===typeof v) {
+                        if (Number.isSafeInteger(v)) {
+                            this._.primIns[k] = new Integer(v); // {name:0} => {name:new Integer(0)} と見做す
+                            this._.primIns[k].validate();
+                            const V = this._.primIns[k].valueOf();
+                            options[k] = {value:V}; v = {value:V};
+                        } else {
+                            throw new TypeError(`Number型リテラル値を直接指定した時は{value:Integer(999)}等の省略形と見做します。しかし指定された値は非Integer値でした。:${v}\nNumber.isSafeInteger()が真を返す範囲内か、少数値でないか等を確認してください。\n少数を使用するなら{weight:Float(62.1)}のように書いてください。`);
+                        }
+                    } else { options[k] = {value:v}; v = {value:v}; }// null, undefined, Symbol, Boolean(true/false), BigInt(1n), String('a'), {k:'v'}, ['v'], new Map([['k','v']]), 等
+                }
+
                 /*
                 //const V = ('number'===typeof options[k] && !Number.isNaN(options[k]) && Number.isFinite(options[k])) ? new Float(v) : v;
                 const V = ('number'===typeof v && !Number.isNaN(v) && Number.isFinite(v)) ? new Float(v) : v;
@@ -409,21 +438,20 @@ class ObservedProperties {
                 iOpt[k] = {value:V}; v = {value:V};
             }
             */
-            if ('number'===typeof v) {
-                if (Number.isSafeInteger(v)) {
-                    //const V = new Integer(v);
-                    //iOpt[k] = {value:V}; v = {value:V};
-                    this._.primIns[k] = new Integer(v);
-                    this._.primIns[k].validate();
-                    const V = this._.primIns[k].valueOf();
-                    iOpt[k] = {value:V}; v = {value:V};
-                } else {
-                    throw new TypeError(`Number型リテラル値を直接指定した時は{value:Integer(999)}等の省略形と見做します。しかし指定された値は非Integer値でした。:${v}\nNumber.isSafeInteger()が真を返す範囲内か、少数値でないか等を確認してください。\n少数を使用するなら{weight:Float(62.1)}のように書いてください。`);
-                }
-            } else { // null, undefined, Symbol, Boolean(true/false), BigInt(1n), String('a'), {k:'v'}, ['v'], new Map([['k','v']]), 等
-                iOpt[k] = {value:v}; v = {value:v};
+            if (!isObj(iOpt[k])) { // {value:'', type:String}ではなく直接value値をセットした場合
+                if ('number'===typeof v) {
+                    if (Number.isSafeInteger(v)) {
+                        //const V = new Integer(v);
+                        //iOpt[k] = {value:V}; v = {value:V};
+                        this._.primIns[k] = new Integer(v);
+                        this._.primIns[k].validate();
+                        const V = this._.primIns[k].valueOf();
+                        iOpt[k] = {value:V}; v = {value:V};
+                    } else {
+                        throw new TypeError(`Number型リテラル値を直接指定した時は{value:Integer(999)}等の省略形と見做します。しかし指定された値は非Integer値でした。:${v}\nNumber.isSafeInteger()が真を返す範囲内か、少数値でないか等を確認してください。\n少数を使用するなら{weight:Float(62.1)}のように書いてください。`);
+                    }
+                } else { iOpt[k] = {value:v}; v = {value:v}; }// null, undefined, Symbol, Boolean(true/false), BigInt(1n), String('a'), {k:'v'}, ['v'], new Map([['k','v']]), 等
             }
-
             if (iOpt.hasOwnProperty('value') && iOpt.value instanceof ObservedProperties) {continue}
 //            console.log(k, v);
             if (!v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
@@ -438,28 +466,35 @@ class ObservedProperties {
             if (isPrimIns(v.value)) {this._.primIns[k] = v.value; iOpt[k].value = v.value.valueOf();}
         }
         this._.opt = iOpt;
+//        console.error(this._.opt);
     }
-    setup(values) {// values:{name:value, name:value, ...}
-        for (let [k, v] of Object.entries(values)) {
-//            console.log(this._.prop);
-            if (!(k in this._.prop)) {throw new SyntaxError(`未定義のプロパティに代入しました。:${prop}`)}
-            // ToDo: 型、妥当性チェックする
-            Typed.valid(this._.opt[k].type, v);
-            // 独自プリミティブ型インスタンスだった場合(Int,Float)
-//            if (isPrimIns(v) && 'validate' in v) {this._.primIns[k].validate(v);}
-            if (k in this._.primIns) {this._.primIns[k].validate(v)}
-            const oldValue = this._.prop[k];
-            this._.prop[k] = v;
-            //this._.obj.open[k] = v; // update()が毎回発火してしまうので使わぬようにする
-            if (k in this._.onSet) {this._.onSet[k](v, oldValue);}
-            if (k in this._.onChange && value!==oldValue) {this._.onChange[k](v, oldValue);}
-//            if (k in this._.primIns) {this._.primIns[k] = new this._.primIns[k].new(v)}
-            if (k in this._.primIns) {this._.primIns[k].value = v}
+    #makeDescriptor(k, v) {
+        this._.prop[k] = undefined;
+        const isObs = (v instanceof ObservedProperties);
+        const desc = {
+            configurable: false,
+            enumerable: true,
+            get: ()=>this._.prop[k],
+            set: (V)=>{
+//                console.log(this, this._.opt[k].type);
+                // ToDo: 型、妥当性チェックする
+                Typed.valid(this._.opt[k].type, V);
+                // 独自プリミティブ型インスタンスだった場合(Int,Float)
+                //if (isPrimIns(v) && 'validate' in v) {this._.primIns[k].validate(v);}
+                if (k in this._.primIns) {this._.primIns[k].validate(v)}
+                const oldValue = this._.prop[k];
+                this._.prop[k] = V;
+                if (k in this._.onSet) {this._.onSet[k](V, oldValue);}
+                if (k in this._.onChange && V!==oldValue) {this._.onChange[k](V, oldValue);}
+                this._.update();
+            },
+        };
+        if (!isObs) {// ToDo: 型、妥当性チェックする
+            console.log(v, v.value);
+            Typed.valid(this._.opt[k].type, v.value);
         }
-        return this.#update();
-    }
-    #update() {
-        if ('function'===typeof this._.update) {return this._.update(structuredClone(this._.prop), this._.oOpt);}
+        this._.prop[k] = v.value;
+        Object.defineProperty(this, k, desc);
     }
     #makeProxy() { return new Proxy(this, {
         get: (target, prop, receiver)=>{
@@ -487,34 +522,28 @@ class ObservedProperties {
             if (prop in target._.onChange && value!==oldValue) {target._.onChange[prop](value, oldValue);}
             target._.update();
         },
-    });
-    }
-    #makeDescriptor(k, v) {
-        this._.prop[k] = undefined;
-        const isObs = (v instanceof ObservedProperties);
-        const desc = {
-            configurable: false,
-            enumerable: true,
-            get: ()=>this._.prop[k],
-            set: (V)=>{
-//                console.log(this, this._.opt[k].type);
-                // ToDo: 型、妥当性チェックする
-                Typed.valid(this._.opt[k].type, V);
-                // 独自プリミティブ型インスタンスだった場合(Int,Float)
-                //if (isPrimIns(v) && 'validate' in v) {this._.primIns[k].validate(v);}
-                if (k in this._.primIns) {this._.primIns[k].validate(v)}
-                const oldValue = this._.prop[k];
-                this._.prop[k] = V;
-                if (k in this._.onSet) {this._.onSet[k](V, oldValue);}
-                if (k in this._.onChange && V!==oldValue) {this._.onChange[k](V, oldValue);}
-                this._.update();
-            },
-        };
-        if (!isObs) {// ToDo: 型、妥当性チェックする
-            Typed.valid(this._.opt[k].type, v.value);
+    });}
+    setup(values) {// values:{name:value, name:value, ...}
+        for (let [k, v] of Object.entries(values)) {
+//            console.log(this._.prop);
+            if (!(k in this._.prop)) {throw new SyntaxError(`未定義のプロパティに代入しました。:${prop}`)}
+            // ToDo: 型、妥当性チェックする
+            Typed.valid(this._.opt[k].type, v);
+            // 独自プリミティブ型インスタンスだった場合(Int,Float)
+//            if (isPrimIns(v) && 'validate' in v) {this._.primIns[k].validate(v);}
+            if (k in this._.primIns) {this._.primIns[k].validate(v)}
+            const oldValue = this._.prop[k];
+            this._.prop[k] = v;
+            //this._.obj.open[k] = v; // update()が毎回発火してしまうので使わぬようにする
+            if (k in this._.onSet) {this._.onSet[k](v, oldValue);}
+            if (k in this._.onChange && value!==oldValue) {this._.onChange[k](v, oldValue);}
+//            if (k in this._.primIns) {this._.primIns[k] = new this._.primIns[k].new(v)}
+            if (k in this._.primIns) {this._.primIns[k].value = v}
         }
-        this._.prop[k] = v.value;
-        Object.defineProperty(this, k, desc);
+        return this.#update();
+    }
+    #update() {
+        if ('function'===typeof this._.update) {return this._.update(structuredClone(this._.prop), this._.oOpt);}
     }
 }
 // undefined, null, NaN, Infinity, -Infinity
