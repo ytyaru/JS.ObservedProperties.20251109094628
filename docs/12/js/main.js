@@ -32,7 +32,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.t('Obs' in window);
 
     // NumberDecimal
-    const dec = Obs.T.n10(2); // 桁数を設定する。初期値は0。
+    Obs.T.n10(2); // 桁数を設定する。初期値は0。
+    Obs.T.n10(2,[123,45]); // 桁数を設定する。初期値は0。
     a.t(()=>{
         /*
         const dec = Obs.T.ndec([123,45]); // 少数部が0のとき桁を指定できない！(整数部と少数部を数で指定する)
@@ -51,7 +52,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
         // r10(), i10()でもいい。但しこの10が十進数のことでなく10bitのことのようにも見える。かといってrdec, idecは冗長か？　少なくともrdecはdecにすべき。
         // Number10でもいいか。num10, n10等で略す。
         */
-        const dec = Obs.T.n10(2); // 桁数を設定する。初期値は0。
+        const dec = Obs.T.n10(2,[123,45]); // 桁数を設定する。初期値は0。
         const R0 = dec instanceof Obs.C.NumberDecimal;
         const R1 = 123===dec.partI;
         const R2 = 45===dec.partF;

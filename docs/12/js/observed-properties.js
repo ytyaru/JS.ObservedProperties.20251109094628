@@ -97,23 +97,34 @@ class NumberDecimal extends Float {// 十進数における整数と少数を合
         this.validFig(fig);
         const o = Float.validate(value, false, unsigned, min, max);
         const p = this.validValue(value);
-        const i = Math.trunc(o.value);
-        return {...o, ...p, fig:fig, part:{i:i, f:o.value-i}};
+        const i = Math.trunc(p.value);
+        return {...o, ...p, fig:fig, part:{i:i, f:p.value-i}};
     }
     static validFig(fig) {if(!(Number.isSafeInteger(fig) && this.MIN_FIG<=fig && fig<=this.MAX_FIG)){throw new TypeError(`figは0〜15の整数値であるべきです。:${fig}`)}}
     static get MIN_FIG() {return 0}
     static get MAX_FIG() {return 15}
     static validValue(v) {
         console.log(v);
-        if (Number.isSafeInteger(v)) { return ({i:v, f:0, fig:-1}) }// 123（少数部の初期値は省略し0とする。但し桁数は別途指定する）
-        else if ('string'===typeof v && -1 < v.indexOf('.')) {// '123.45' 初期値から桁数も指定する
-            const s = v.split('.');
-            const [i, f] = s.map(x=>parseInt(x));
-            return ({i:i, f:f, fig:s[1].length});
-        }
-        // [整数部, 少数部] 両方共Number型整数値で示す。初期値から桁数も指定する。
-        else if (Array.isArray(v) && 2===v.length && v.every(x=>Number.isSafeInteger(x))) { return ({i:v[0], f:v[1], fig:Math.log10(f)}) }
-        else {throw new TypeError(`valueはNumber.isSafeInteger()値、'123.45'等の文字列、[整数部,少数部]の配列(両方共Number型整数値)であるべきです。`)}
+        const V = (()=>{
+            if (Number.isSafeInteger(v)) { return ({i:v, f:0, fig:-1}) }// 123（少数部の初期値は省略し0とする。但し桁数は別途指定する）
+            else if ('string'===typeof v && -1 < v.indexOf('.')) {// '123.45' 初期値から桁数も指定する
+                const s = v.split('.');
+                const [i, f] = s.map(x=>parseInt(x));
+                return ({i:i, f:f, fig:s[1].length});
+            }
+            // [整数部, 少数部] 両方共Number型整数値で示す。初期値から桁数も指定する。
+            //else if (Array.isArray(v) && 2===v.length && v.every(x=>Number.isSafeInteger(x))) { return ({i:v[0], f:v[1], fig:Math.log10(v[1])}) }
+            else if (Array.isArray(v) && 2===v.length && v.every(x=>Number.isSafeInteger(x))) {
+                const [i, f] = [...v];
+                console.log('fig:', `${Math.abs(f)}`.length, `${Math.abs(f)}`, f);
+                //return ({i:i, f:f, fig:`${0 < f ? f*-1 : f}`.length});
+                return ({i:i, f:f, fig:`${Math.abs(f)}`.length});
+            }
+            else {throw new TypeError(`valueはNumber.isSafeInteger()値、'123.45'等の文字列、[整数部,少数部]の配列(両方共Number型整数値)であるべきです。:${v}`)}
+        })();
+        console.log(V);
+        if (!'i f'.split(' ').every(n=>Number.isSafeInteger(V[n]))) {throw new TypeError(`valueは整数部、少数部共にNumber.isSafeInteger()が真を返す値であるべきです。`)}
+        return V;
      }
     validValue(v) {
         if (Number.isSafeInteger(v)) {// 123（少数部の初期値は省略し0とする。但し桁数は別途指定する）
@@ -131,16 +142,22 @@ class NumberDecimal extends Float {// 十進数における整数と少数を合
     }
     //constructor(value, fig, unsigned=false, min=undefined, max=undefined) {
     constructor(fig, value=0, unsigned=false, min=undefined, max=undefined) {
-        const o = NumberDecimal.validValue(value);
-        fig = fig ?? o.fig;
+//        const o = NumberDecimal.validValue(value);
+//        fig = fig ?? o.fig;
 //        value = o.i + (o.f / this.#figP);
-        value = o.i + (o.f / ((10)**fig));
+//        let F = o.i + (o.f / ((10)**fig));
         //super(value, fig, false, unsigned, min, max);
         //constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
-        super(value, false, unsigned, min, max);
+        //super(value, false, unsigned, min, max);
+        super(0, false, unsigned, min, max);
         //this._ = NumberDecimal.validate(value, fig, unsigned, min, max);
-        this._ = NumberDecimal.validate(fig, value, unsigned, min, max);
-        console.log(this._);
+//        this._ = NumberDecimal.validate(fig, value, unsigned, min, max);
+
+        const p = NumberDecimal.validValue(value);
+        const i = Math.trunc(p.value);
+        //this._ = {...this._, ...p, fig:fig, part:{i:i, f:p.value-i}};
+        this._ = {...this._, fig:p.fig, part:{i:p.i, f:p.f}};
+        console.log(this._, p);
 //        this.validFig(fig);
 //        this._.fig = fig;
 //        this._.part = {i:Math.trunc(this._.value), f:this._.value - Math.trunc(this._.value)};
