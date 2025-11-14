@@ -206,6 +206,90 @@ console.log(round(1.54, 1));
 console.log(round(1.55, 1));
 */
 
+class RoundableFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を丸める（少数部を整数化して切り捨てた文字を返す）
+    static get MIN_FIG() {return 0}
+    static get MAX_FIG() {return 15}
+    static get METHOD_NAMES() {return 'ceil floor round roundToEven trunc'.split(' ')}
+    static validFig(fig) {if (Number.isSafeInteger(fig) && fig < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < fig) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}; return true;}// Number型の実装IEEE754倍精度浮動小数点数は十進数で整数部15桁、少数部17桁まで保証される。誤差をなくすため小数部を整数化するから15桁が上限。
+    static validMethodName(name) {if ('string'===typeof name && !this.METHOD_NAMES.some(n=>n===name)) {throw new TypeError(`methodName「${name}」は不正です。次のいずれかであるべきです。:${this.METHOD_NAMES}`)}; return true;}
+    static validValueFig(valueFigMethod) {
+        // Number 1個: [value, fig=0, methodName='round']
+        // [N, N]:     [value, fig]
+        // [N, S]:     [value, fig=0, methodName=S]
+        // [N, N, S]:  [value, fig, methodName]
+        // '0.1200':   [parseFloat('0.1200'), '0.1200'.split('.').length]
+        // '0.1200 trunc':   [parseFloat('0.1200'), '0.1200'.split('.').length, 'trunc']
+        const V = ((v)=>{
+            if (Number.isSafeInteger(v)) { return [v, RoundedFloat.MIN_FIG, 'round'] }
+            else if (Array.isArray(v) && 2===v.length && v.every(x=>'number'===typeof x)) {
+                const T1 = typeof v[1];
+                     if ('number'===T1 && this.validFig(v[1])) {return [v[0], v[1], 'round']}
+                else if ('string'===T1 && this.validMethodName(v[1])) {return [v[0], RoundedFloat.MIN_FIG, v[1]]}
+                else {throw new TypeError(`valueFigMethodが要素二つの配列な時は[value,fig]か[value,method]のいずれかのみ有効です。valueは初期値でNumber型、figは少数部桁数をNumber型で、methodは丸める方法を次の文字列のいずれかで指定します。:${this.METHOD_NAMES}`)}
+            }
+            else if (Array.isArray(v) && 3===v.length && 'number'===typeof v[0] && this.validFig(v[1]) && this.validMethodName(v[2])) {return v}
+//            else if ('string'===typeof v && v.match(/^\d+\.\d$/)) {return [parseFloat(v), v.split('.')[1].length]}
+            else if ('string'===typeof v) {
+                //if (v.match(/^\d+\.\d $/)) {return [parseFloat(v), v.split('.')[1].length]}
+                const D = `(\d+\.\d)`;
+                const RD = new RegExp(`^${D}$`);
+                if (v.match(RD)) {return [parseFloat(v), v.split('.')[1].length]}
+                const M = `(${this.METHOD_NAMES.join('|')})`;
+                const RM = new RegExp(`^${M}$`);
+                const RF = new RegExp(`^${D} ${M}$`);
+                //const RF = new RegExp(`^(\d+\.\d) ${M}$`);
+                if (v.match(RM)) {return [0, 0, v]}
+                let match = v.match(RF);
+                if (match) {return [parseFloat(match[1]), match[1].split('.')[1].length, match[2]]}
+                throw new TypeError(`valueFigMethodが文字列の場合、「${D}」か「${M}」か「${D} ${M}」の書式であるべきです。`);
+            }
+            else {throw new TypeError(`valueFigは[初期値, 少数部桁数]で指定してください。またはNumber型値一個で[任意値,0]、String型値一個(例:'2.3400')で[parsefloat('2.3400'), 少数部桁数(この場合4)])のように短縮指定できます。:${v}`)};
+            /*
+            else if ('string'===typeof v && v.match(/^\d+\.\d/$)) {// '123.45' 初期値から桁数も指定する。十進数表記のみ有効。0b001, 0o777, 0xFFなどは無効
+                const [I,F] = v.split('.');
+                return [parseFloat(v), F.length];
+            }
+            else {throw new TypeError(`valueFigは[初期値, 少数部桁数]で指定してください。またはNumber型値で[任意値,0]、String型値'2.3400'で[parsefloat('2.3400'), 少数部桁数(この場合4)])で指定してください。:${v}`)})();
+            */
+        })(valueFig);
+        if (V[1] < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < V[1]) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}
+        return ({value:NumberRounder[v2](V[0], V[1]), fig:V[1], roundMethodName:V[2]});
+//        return ({value:NumberRounder.trunc(V[0], V[1]), fig:V[1]});
+//        return ({value:Math.trunc(V[0]), fig:V[1]});
+        //return ({value:V[0], fig:V[1]});
+    }
+    constructor(valueFigMethod, unsafed=false, unsigned=false, min=undefined, max=undefined) {
+        const o = DecimalFloat.validValueFig(valueFig);
+        super(0, unsafed, unsigned, min, max);
+        this._ = {...this._, ...o};
+    }
+    toFixed(fig) {return Number.toFixed(fig ?? this._.fig)} // 123.456789, fig:2 => 123.46
+    toTrunc(fig) {
+        if (Number.isSafeInteger(fig) && (V[1] < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < V[1])) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}
+        const D = 10**this._.fig; // 0:1, 1:10, 2:100, ... figが15までであるべき理由はNumber型の整数が十進数の15桁までしか安全に計測できないから。
+        const I = Math.trunc(this.value);
+        const F = this.value - I;
+        const G = Math.trunc(F * D); // 123.456789 * 1000 = 123.456 => '123.456'
+        return `${I}.${G}`; // FixedFloat([123.45678, 2]).toTrunc(): 123.45
+    }
+    toRounded(fig, R) {
+        fig = fig ?? this._.fig;
+        R = R ?? this._.roundedMethodName;
+        RoundableFloat.validFig(fig);
+        RoundableFloat.validMethodName(R);
+        if (this._.unsafed && !Number.isFinite(this.value)) {throw new TypeError(`丸める数は有限数であるべきです。:${this.value}`)}
+//        return NumberRounder[R](F * D);
+//        if (Number.isSafeInteger(fig) && (V[1] < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < V[1])) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}
+        const D = 10**fig; // 0:1, 1:10, 2:100, ... figが15までであるべき理由はNumber型の整数が十進数の15桁までしか安全に計測できないから。
+        const I = Math.trunc(this.value);
+        const F = this.value - I;
+        //const G = Math.trunc(F * D); // 123.456789 * 1000 = 123.456 => '123.456'
+        const G = NumberRounder[R](F * D); // 123.456789 * 1000 = 123.456 => '123.456'
+        return `${I}.${G}`; // FixedFloat([123.45678, 2]).toTrunc(): 123.45
+    }
+    toString(radix=10) {return 10===radix ? this.toRounded(this._.fig) : super.toString(radix);}
+    //toString(radix=10) {return 10===radix ? this.toTrunc(this._.fig) : super.toString(radix);}
+}
 //class DecimalFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を修正する（少数部を整数化して四捨五入する）
 //class FixedFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を修正する（少数部を整数化して四捨五入する）
 //class RoundedFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を丸める（少数部を整数化して切り捨てた文字を返す）
@@ -230,7 +314,9 @@ class TruncFloat extends Float {// IEEE754による倍精度浮動小数点数�
             */
         })(valueFig);
         if (V[1] < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < V[1]) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}
-        return ({value:V[0], fig:V[1]});
+        return ({value:NumberRounder.trunc(V[0], V[1]), fig:V[1]});
+//        return ({value:Math.trunc(V[0]), fig:V[1]});
+        //return ({value:V[0], fig:V[1]});
     }
     constructor(valueFig, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         const o = DecimalFloat.validValueFig(valueFig);
