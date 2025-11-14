@@ -33,7 +33,6 @@ class VarAssignable {// 変数への代入可能性。型を定義するのに�
     }
 }
 
-
 // JavaScriptは数をNumber型で扱うが、これは64bitメモリであり、かつIEEE754の倍精度浮動小数点数で実装されている。このため十進数表示において、整数は15桁まで、少数は17桁までは正確に表現できるが、それ以上の桁になると正確に表現できず、比較式も不正確な結果を返してしまう。しかもそれを正常とし、エラーを発生させない。
 class Quantity extends Number {// NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined) {
@@ -105,36 +104,149 @@ class Float extends Quantity {// NaN,Infinityを制限した有限数
 }
 class Rate extends Float { constructor(value) {super(value, false, true, 0, 1)} }// 比率(0〜1の実数)
 class Percent extends Float { constructor(value) {super(value, false, true, 0, 100)} }// 百分率(0〜100の実数)
-class DecimalFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を修正する（少数部を整数化して四捨五入する）
-    static validValue(v) {
-        // Number 1個: part.iとする。part.f=0, fig=1とする。
-        // [N, N]:     part.i, figとする。part.f=0。
-        // [N, N, N]:  part.i, part.f, figとする。
-        const V = (()=>{
-            if (Number.isSafeInteger(v)) { return ({i:v, f:0, fig:-1}) }// 123（少数部の初期値は省略し0とする。但し桁数は別途指定する）
-            else if ('string'===typeof v && -1 < v.indexOf('.')) {// '123.45' 初期値から桁数も指定する
-                const s = v.split('.');
-                const [i, f] = s.map(x=>parseInt(x));
-                return ({i:i, f:f, fig:s[1].length});
-            }
-            // [整数部, 少数部] 両方共Number型整数値で示す。初期値から桁数も指定する。
-            //else if (Array.isArray(v) && 2===v.length && v.every(x=>Number.isSafeInteger(x))) { return ({i:v[0], f:v[1], fig:Math.log10(v[1])}) }
-            else if (Array.isArray(v) && 2===v.length && v.every(x=>Number.isSafeInteger(x))) {
-                const [i, f] = [...v];
-                console.log('fig:', `${Math.abs(f)}`.length, `${Math.abs(f)}`, f);
-                //return ({i:i, f:f, fig:`${0 < f ? f*-1 : f}`.length});
-                return ({i:i, f:f, fig:`${Math.abs(f)}`.length});
-            }
-            else {throw new TypeError(`valueはNumber.isSafeInteger()値、'123.45'等の文字列、[整数部,少数部]の配列(両方共Number型整数値)であるべきです。:${v}`)}
-        })();
-        console.log(V);
-        if (!'i f'.split(' ').every(n=>Number.isSafeInteger(V[n]))) {throw new TypeError(`valueは整数部、少数部共にNumber.isSafeInteger()が真を返す値であるべきです。`)}
-        return V;
-     }
-    constructor(valueFig, unsafed=false, unsigned=false, min=undefined, max=undefined) {
-        super(valueFig, unsafed, unsigned, min, max);
-    }
 
+// 最近接遇数丸め（銀行家丸め。四捨五入時に5の時偶数になるほうへ丸める）
+// roundToNearestEven()
+// roundToEven()
+console.log(Math)
+console.log(Math.prototype)
+Math.isOdd = function(v) {return 0!==(v % 2)} // 1===だと -1 が渡された時バグった
+Math.isEven = function(v) {return 0===(v % 2)}
+Math.roundToEven = function(v) {
+    const I = Math.trunc(v);
+    const F = v - I;
+    const G = Math.trunc(F * 10); // 少数第一位の整数値(0〜9)
+    const [C, T] = [Math.ceil(v), Math.trunc(v)];
+    return 5 < G ? C : (G < 5) ? T : this.isEven(C) ? C : T; // 少数第一位の整数値が5なら偶数に丸める。他は四捨五入と同じ
+//    const [C, T] = [Math.ceil(v), Math.trunc(v)];
+//    return this.isEven(C) ? C : T;
+}
+/*
+Math.prototype.isOdd = function(v) {return 1===(v % 2)}
+Math.prototype.isEven = function(v) {return 0===(v % 2)}
+Math.prototype.roundToEven = function(v) {
+    const [C, T] = [Math.ceil(v), Math.trunc(v)];
+    return this.isEven(C) ? C : T;
+}
+*/
+
+// 負数時の丸める方向をマイナスにする（標準Math.round()等はプラス方向）
+// https://qiita.com/y-some/items/27ddb39222d528aef7ac
+// JS:プラス方向, Excel:マイナス方向
+class SignedNumberRounder {
+    static round() {
+
+    }
+    static #round(method, value, fractionDigits=1) { // precision 精度
+
+    }
+}
+
+// 丸め
+// https://qiita.com/k8o/items/fec737cdcc290776a9ac
+class NumberRounder {
+    //const round = (radix: number, fractionDigits = 1) {
+        /*
+    round(radix, fractionDigits=1) {
+        const [mantissa, exponent] = `${radix}e`.split('e');
+        const value = Math.round(
+            Number(`${mantissa}e${Number(exponent ?? '') + fractionDigits}`)
+        );
+        const [calcedMantissa, calcedExponent] = `${value}e`.split('e');
+        return Number(`${calcedMantissa}e${
+            Number(calcedExponent ?? '') - fractionDigits
+        }`);
+    };
+    */
+    static round(radix, fractionDigits=1) {return this.#round('round', radix, fractionDigits);} // 四捨五入
+    static roundToEven(radix, fractionDigits=1) {return this.#round('roundToEven', radix, fractionDigits);} // 最近接偶数丸め（四捨五入の対象が5の時偶数になるようにする）
+    static ceil(radix, fractionDigits=1) {return this.#round('ceil', radix, fractionDigits);} // 切り上げ
+    static floor(radix, fractionDigits=1) {return this.#round('floor', radix, fractionDigits);} // 切り捨て（負数はより大きい負数になってしまうことがあり単純な切り捨てでない）
+    static trunc(radix, fractionDigits=1) {return this.#round('trunc', radix, fractionDigits);} // 切り捨て（負数も単純な切り捨てになる）
+    static #round(method, radix, fractionDigits=1) {// 指定した少数桁で丸める（標準APIは少数第一位固定）
+        const [mantissa, exponent] = `${radix}e`.split('e');
+
+        const S = (radix < 0) ? -1 : 1;
+        const P = Math.pow(10, fractionDigits);
+        const N = Number(`${mantissa}e${Number(exponent ?? '') + fractionDigits}`);
+        const value = Math[method]((N * S) * P) / P * S;
+
+        /*
+        const value = Math[method](
+            Number(`${mantissa}e${Number(exponent ?? '') + fractionDigits}`)
+        );
+        */
+        const [calcedMantissa, calcedExponent] = `${value}e`.split('e');
+        return Number(`${calcedMantissa}e${
+            Number(calcedExponent ?? '') - fractionDigits
+        }`);
+        /*
+        */
+        /*
+        return Number(`${calcedMantissa}e${
+            Number(calcedExponent ?? '') - fractionDigits
+        }`) * ((radix < 0) ? -1 : 1); // https://qiita.com/y-some/items/27ddb39222d528aef7ac
+        */
+    };
+}
+/*
+function round(radix, fractionDigits=1) {
+    const [mantissa, exponent] = `${radix}e`.split('e');
+    const value = Math.round(
+        Number(`${mantissa}e${Number(exponent ?? '') + fractionDigits}`)
+    );
+    const [calcedMantissa, calcedExponent] = `${value}e`.split('e');
+    return Number(`${calcedMantissa}e${
+        Number(calcedExponent ?? '') - fractionDigits
+    }`);
+}
+console.log(round(1.5, 0));
+console.log(round(2.5, 0));
+console.log(round(1.54, 1));
+console.log(round(1.55, 1));
+*/
+
+//class DecimalFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を修正する（少数部を整数化して四捨五入する）
+//class FixedFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を修正する（少数部を整数化して四捨五入する）
+//class RoundedFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を丸める（少数部を整数化して切り捨てた文字を返す）
+class TruncFloat extends Float {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を修正する（少数部を整数化して切り捨てた文字を返す）
+    static get MIN_FIG() {return 0}
+    static get MAX_FIG() {return 15}
+    static validValueFig(valueFig) {
+        // Number 1個: [value, fig=0]
+        // [N, N]:     [value, fig]
+        // '0.1200':   [parseFloat('0.1200'), '0.1200'.split('.').length]
+        const V = ((v)=>{
+            if (Number.isSafeInteger(v)) { return [v, 0] }// 123（少数部桁数は0とする（小数点は表示せず小数点以下で四捨五入した文字列を返す））
+            else if (Array.isArray(v) && 2===v.length && v.every(x=>'number'===x)) {return v}
+            else if ('string'===typeof v && v.match(/^\d+\.\d$/)) {return [parseFloat(v), v.split('.')[1].length]}
+            else {throw new TypeError(`valueFigは[初期値, 少数部桁数]で指定してください。またはNumber型値一個で[任意値,0]、String型値一個(例:'2.3400')で[parsefloat('2.3400'), 少数部桁数(この場合4)])のように短縮指定できます。:${v}`)};
+            /*
+            else if ('string'===typeof v && v.match(/^\d+\.\d/$)) {// '123.45' 初期値から桁数も指定する。十進数表記のみ有効。0b001, 0o777, 0xFFなどは無効
+                const [I,F] = v.split('.');
+                return [parseFloat(v), F.length];
+            }
+            else {throw new TypeError(`valueFigは[初期値, 少数部桁数]で指定してください。またはNumber型値で[任意値,0]、String型値'2.3400'で[parsefloat('2.3400'), 少数部桁数(この場合4)])で指定してください。:${v}`)})();
+            */
+        })(valueFig);
+        if (V[1] < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < V[1]) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}
+        return ({value:V[0], fig:V[1]});
+    }
+    constructor(valueFig, unsafed=false, unsigned=false, min=undefined, max=undefined) {
+        const o = DecimalFloat.validValueFig(valueFig);
+        super(0, unsafed, unsigned, min, max);
+        this._ = {...this._, ...o};
+    }
+    toFixed(fig) {return Number.toFixed(fig ?? this._.fig)} // 123.456789, fig:2 => 123.46
+    toTrunc(fig) {
+        if (Number.isSafeInteger(fig) && (V[1] < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < V[1])) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}
+        const D = 10**this._.fig; // 0:1, 1:10, 2:100, ... figが15までであるべき理由はNumber型の整数が十進数の15桁までしか安全に計測できないから。
+        const I = Math.trunc(this.value);
+        const F = this.value - I;
+        const G = Math.trunc(F * D); // 123.456789 * 1000 = 123.456 => '123.456'
+        return `${I}.${G}`; // FixedFloat([123.45678, 2]).toTrunc(): 123.45
+    }
+    toString(radix=10) {return 10===radix ? this.toTrunc(this._.fig) : super.toString(radix);}
 }
 class NumberDecimal extends Float {// 十進数における整数と少数を合わせて15桁までの有限数(IEEE754において整数部は15桁までが正確に表現できる上限)
     //static validate(value, fig, unsigned=false, min=undefined, max=undefined) {
@@ -907,6 +1019,9 @@ console.assert(3.14===MATH.PI);
 //        intdec:(...args)=>new IntegerDecimal(...args),
 //        idec:(...args)=>new IntegerDecimal(...args),
     },
+    U: {// Utility
+        NumberRounder: NumberRounder,
+    }
     /*
     N: {// N=New
         i:(...args)=>new Integer(...args),

@@ -34,6 +34,85 @@ window.addEventListener('DOMContentLoaded', (event) => {
     // NumberDecimal
     Obs.T.n10(2); // 桁数を設定する。初期値は0。
     Obs.T.n10(2,[123,45]); // 桁数を設定する。初期値は0。
+
+    a.t('isOdd' in Math);
+    a.t('isEven' in Math);
+    a.t('roundToEven' in Math);
+    a.t(()=>Math.isEven(0));
+    a.f(()=>Math.isEven(1));
+    a.f(()=>Math.isEven(-1));
+    a.f(()=>Math.isEven(Number.MIN_SAFE_INTEGER));   // -9007199254740991 
+    a.t(()=>Math.isEven(Number.MIN_SAFE_INTEGER+1)); // -9007199254740990 
+    a.f(()=>Math.isEven(Number.MAX_SAFE_INTEGER));   //  9007199254740991 
+    a.t(()=>Math.isEven(Number.MAX_SAFE_INTEGER-1)); //  9007199254740990 
+    a.f(()=>Math.isOdd(0));
+    a.t(()=>Math.isOdd(1));
+    a.t(()=>Math.isOdd(-1));
+    a.t(()=>Math.isOdd(Number.MIN_SAFE_INTEGER));   // -9007199254740991 
+    a.f(()=>Math.isOdd(Number.MIN_SAFE_INTEGER+1)); // -9007199254740990 
+    a.t(()=>Math.isOdd(Number.MAX_SAFE_INTEGER));   //  9007199254740991 
+    a.f(()=>Math.isOdd(Number.MAX_SAFE_INTEGER-1)); //  9007199254740990 
+    a.t(1===Math.round(0.5)); // 四捨五入
+    a.t(2===Math.round(1.5)); // 四捨五入
+    a.t(0===Math.roundToEven(0.5)); // 最近接偶数丸め（独自実装した。5の時は偶数になるほうへ丸める）
+    a.t(2===Math.roundToEven(1.5)); // 最近接偶数丸め（独自実装した。5の時は偶数になるほうへ丸める）
+
+    // 負数の時はプラス方向に丸める仕様（四捨五入じゃない……）
+//    a.t(-1===Math.round(-0.5)); // 四捨五入 こっちが望ましいのに、JSの仕様じゃマイナス値でもプラス方向に丸められるせいで 0 が返る…
+//    a.t(-2===Math.round(-1.5)); // 四捨五入 こっちが望ましいのに、JSの仕様じゃマイナス値でもプラス方向に丸められるせいで 0 が返る…
+    a.t( 0===Math.round(-0.5)); // 四捨五入 JSの仕様じゃ正しいが、四捨五入から見ると間違っている…
+    a.t(-1===Math.round(-1.5)); // 四捨五入 JSの仕様じゃ正しいが、四捨五入から見ると間違っている…
+//    a.t( 0===Math.roundToEven(-0.5)); // 最近接偶数丸め
+//    a.t(-2===Math.roundToEven(-1.5)); // 最近接偶数丸め
+    a.t( 0===Math.roundToEven(-0.5)); // 最近接偶数丸め
+    a.t(-1===Math.roundToEven(-1.5)); // 最近接偶数丸め（偶数になってない……）
+
+    // 上記丸め間違いを正すために実装したのがNumberRounder。
+    console.log(Obs.U.NumberRounder.round(0.5, 0));
+    a.t(1===Obs.U.NumberRounder.round(0.5, 0));   //  0.5 を 小数点0桁で丸めて四捨五入すると  1
+    a.t(2===Obs.U.NumberRounder.round(1.5, 0));   //  1.5 を 小数点0桁で丸めて四捨五入すると  2
+    a.t(-1===Obs.U.NumberRounder.round(-0.5, 0)); // -0.5 を 小数点0桁で丸めて四捨五入すると -1
+    a.t(-2===Obs.U.NumberRounder.round(-1.5, 0)); // -1.5 を 小数点0桁で丸めて四捨五入すると -2
+
+    a.t( 0===Obs.U.NumberRounder.roundToEven(0.5, 0));  //  0.5 を 小数点0桁で丸めて最近接偶数丸めすると  0
+    a.t( 2===Obs.U.NumberRounder.roundToEven(1.5, 0));  //  1.5 を 小数点0桁で丸めて最近接偶数丸めすると  2
+    a.t( 0===Obs.U.NumberRounder.roundToEven(-0.5, 0)); // -0.5 を 小数点0桁で丸めて最近接偶数丸めすると  0
+    a.t(-2===Obs.U.NumberRounder.roundToEven(-1.5, 0)); // -1.5 を 小数点0桁で丸めて最近接偶数丸めすると -2
+
+    // 5 でないなら通常通り切り捨て／切り上げのいずれか
+    a.t( 0===Obs.U.NumberRounder.round( 0.4, 0)); //  0.4 を 小数点0桁で丸めて四捨五入すると  0
+    a.t( 1===Obs.U.NumberRounder.round( 1.4, 0)); //  1.4 を 小数点0桁で丸めて四捨五入すると  1
+    a.t( 0===Obs.U.NumberRounder.round(-0.4, 0)); // -0.4 を 小数点0桁で丸めて四捨五入すると  0
+    a.t(-1===Obs.U.NumberRounder.round(-1.4, 0)); // -1.4 を 小数点0桁で丸めて四捨五入すると -1
+
+    a.t( 0===Obs.U.NumberRounder.roundToEven( 0.4, 0)); //  0.4 を 小数点0桁で丸めて四捨五入すると  0
+    a.t( 1===Obs.U.NumberRounder.roundToEven( 1.4, 0)); //  1.4 を 小数点0桁で丸めて四捨五入すると  1
+    a.t( 0===Obs.U.NumberRounder.roundToEven(-0.4, 0)); // -0.4 を 小数点0桁で丸めて四捨五入すると  0
+    a.t(-1===Obs.U.NumberRounder.roundToEven(-1.4, 0)); // -1.4 を 小数点0桁で丸めて四捨五入すると -1
+
+    a.t( 1===Obs.U.NumberRounder.round( 0.6, 0)); //  0.6 を 小数点0桁で丸めて四捨五入すると  1
+    a.t( 2===Obs.U.NumberRounder.round( 1.6, 0)); //  1.6 を 小数点0桁で丸めて四捨五入すると  2
+    a.t(-1===Obs.U.NumberRounder.round(-0.6, 0)); // -0.6 を 小数点0桁で丸めて四捨五入すると -1
+    a.t(-2===Obs.U.NumberRounder.round(-1.6, 0)); // -1.6 を 小数点0桁で丸めて四捨五入すると -2
+
+    a.t( 1===Obs.U.NumberRounder.roundToEven( 0.6, 0)); //  0.6 を 小数点0桁で丸めて四捨五入すると  1
+    a.t( 2===Obs.U.NumberRounder.roundToEven( 1.6, 0)); //  1.6 を 小数点0桁で丸めて四捨五入すると  2
+    a.t(-1===Obs.U.NumberRounder.roundToEven(-0.6, 0)); // -0.6 を 小数点0桁で丸めて四捨五入すると -1
+    a.t(-2===Obs.U.NumberRounder.roundToEven(-1.6, 0)); // -1.6 を 小数点0桁で丸めて四捨五入すると -2
+
+
+
+
+
+
+    console.log(Math.round(-0.5), Math.round(-1.5)); // 0, -1
+
+
+//    
+//    Math.roundToEven
+
+
+
     a.t(()=>{
         /*
         const dec = Obs.T.ndec([123,45]); // 少数部が0のとき桁を指定できない！(整数部と少数部を数で指定する)
