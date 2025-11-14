@@ -81,6 +81,30 @@ class Float extends Quantity {// NaN,Infinityを制限した有限数
     static validate(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         return Quantity.validate(value, false, false, unsafed, unsigned, min, max);
     }
+    static nearlyEqual(...args) {// 等号===の代替。JSのNumber型は64bit浮動少数点数であり比較等号===では完全一致確認できない（console.assert(0.3===0.1+0.2）でエラーになる）これをいくらか解決する。但し15桁の少数まで。console.assert(nearlyEqual(0.3, 0.1+0.2))でエラーにならない。
+        if (args.length < 2) {throw new TypeError(`引数は比較する数を2個以上渡してください。`)}
+        if (!args.every(v=>'number'!==typeof v)) {throw new TypeError(`引数値は全てNumberプリミティブ値であるべきです。`)}
+        const F = args[0];
+        const S = args.slice(1);
+        for (let v of S) {
+            if (![F,v].every(x=>Number.isFinite(x))) {return [F,v].every(v=>Number.isNaN(v)) || x===y; }// F,v少なくとも１つがNaN/Infinity/-Infinityのいずれか
+            if (parseInt(F) !== parseInt(v)) {return false}
+            const T = parseInt(Math.abs(F + v));
+            const tolerance = T < 1 ? Number.EPSILON : Number.EPSILON * T;
+            return Math.abs(F - v) < tolerance;
+            //this.#nearlyEqual(F, v)
+        }
+    }
+    /*
+    static nearlyEqual(x, y) {// 等号===の代替。JSのNumber型は64bit浮動少数点数であり比較等号===では完全一致確認できない（console.assert(0.3===0.1+0.2）でエラーになる）これをいくらか解決する。但し15桁の少数まで。console.assert(nearlyEqual(0.3, 0.1+0.2))でエラーにならない。
+        if (![x,y].every(v=>'number'===typeof v)) {throw new TypeError(`x,yは両方共Numberかそれを継承した型であるべきです。`)}
+        if (![x,y].every(v=>Number.isFinite(v))) {return [x,y].every(v=>Number.isNaN(v)) || x===y; }// x,y共NaN/Infinity/-Infinityのいずれか
+        if (parseInt(x) !== parseInt(y)) {return false}
+        const T = parseInt(Math.abs(x + y));
+        const tolerance = T < 1 ? Number.EPSILON : Number.EPSILON * T;
+        return Math.abs(x - y) < tolerance;
+    }
+    */
     constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         super(value, false, false, unsafed, unsigned, min, max);
     }
