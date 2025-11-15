@@ -232,14 +232,7 @@ Number.isSafeInteger()が真を返す範囲内か、少数値でないか等を�
         const o = Obs.var({age:Number.MIN_SAFE_INTEGER})
         return o.age===Number.MIN_SAFE_INTEGER;
     });
-
-    let x = Obs.var({
-        name: Obs.var({first:'太郎', last:'山田'}),
-    });
-    console.assert(x.name instanceof Obs.ObservedObject);
-    console.assert('太郎'===x.name.first);
-    console.assert('山田'===x.name.last);
-
+    // ネスト
     a.t(()=>{
         const o = Obs.var({
             name: Obs.var({first:'太郎', last:'山田'}),
