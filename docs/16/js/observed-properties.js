@@ -6,12 +6,14 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
     isInt = (v,n)=>{if (!isNum(v) || !Number.isInteger(v)) {throw getFIError(v,n,true)} return true;},
     isBool = (v,n)=>{if ('boolean'!==typeof v) {throw new TypeError(`${n}は真偽値であるべきです。:${v}`)}}
     validRange = (expected, actual, name)=>{
+        console.log('validRange', expected, actual, name);
         if (!'min max'.split(' ').some(v=>v===name)) {throw new TypeError('nameはminかmaxのみ有効です。')}
         const isOver = 'min'===name ? actual < expected : expected < actual;
         if (isOver) {throw new RangeError(`${name}はunsigned,bitで設定した範囲より${'min'===name ? '小さい' : '大きい'}です。範囲内に指定してください。:expected:${expected}, actual:${actual}`)}
     },
     getNumRange = (unsafed, unsigned, min, max)=>[(min ?? (unsigned ? 0 : (unsafed ? -Number.MAX_VALUE : Number.MIN_SAFE_INTEGER))), (max ?? (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER))];
     getIntRange = (unsafed, unsigned, bit, min, max)=>[(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
+    validMinMax = (min, max)=>{if(max <= min){throw new RangeError(`minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:${min},${max}`)}},
     isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v),
     isNu = (v)=>[null,undefined].some(V=>V===v),
     isNun = (v)=>[null,undefined].some(V=>V===v) || Number.isNaN(v),
@@ -19,6 +21,7 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
     isPrim = (v)=>null!==value && 'object'!==typeof v, // nullやundefinedもプリミティブ値だがそれらは除外する
     primTypes = ()=>[Boolean,Number,BigInt,String,Integer,Float], // プリミティブ型一覧(undefined,null,symbolを除く)
     isPrimIns = (v)=>primTypes().some(T=>v instanceof T); // プリミティブ型インスタンスか
+    sameArys = (x,y)=>[x,y].every(v=>Array.isArray(v)) && x.length===y.length && x.every(v=>v===y); // 二つの配列の内容が順序も含めて同一か
 
 class VarAssignable {// 変数への代入可能性。型を定義するのに用いる。
     static #MEMBERS = 'undefindable nullable nanable infinitable mutable'.split(' ');
@@ -32,9 +35,64 @@ class VarAssignable {// 変数への代入可能性。型を定義するのに�
         this._ = {...D, ...options};
     }
 }
+// ()
+// (value)
+// (options)
+// (value, options)
+// (value, naned, ...)
+
+class QuantityArgs {
+    static get #NAMES() {return 'value naned infinited unsafed unsigned min max'.split(' '); }
+    static get #defaultOptions() { return {
+        value: 0,
+        naned: false,
+        infinited: false,
+        unsafed: false,
+        unsigned: false,
+        min: undefined,
+        max: undefined,
+    } }
+    static argsPattern(...args) {
+        if (0===args.length) { return this.#defaultOptions }
+        //else if (1===args.length) { return {...this.#defaultOptions, value:(isObj(args[0]) ? args[0] : value)} }
+        else if (1===args.length) { return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
+        else if (2===args.length) {
+            if (isObj(args[1])) {return {...this.#defaultOptions, ...args[1], value:args[0]} }
+            else {return {...this.#defaultOptions, value:args[0], naned:args[1]} }
+        }
+        else if (2===args.length) {return ( {...this.#defaultOptions, ...(isObj(args[1]) ? ({...args[1], value:args[0]}) : ({value:args[0], naned:args[1]})) })}
+        //else if (args.length <= this.#NAMES.length) { return args.reduce((o,n,i)=>o[this.#NAMES[i]]=args[i], {}) }
+        //else if (args.length <= this.#NAMES.length) { return {...this.#defaultOptions, ...(args.reduce((o,v,i)=>o[this.#NAMES[i]]=v, {}))}}
+        //else if (args.length <= this.#NAMES.length) { return {...this.#defaultOptions, ...(args.reduce((o,v,i)=>{console.log(o,v,i,this.#NAMES[i]);o[this.#NAMES[i]]=v;return o;}, {}))}}
+        else if (args.length <= this.#NAMES.length) { return {...this.#defaultOptions, ...(args.reduce((o,v,i)=>{o[this.#NAMES[i]]=v;return o;}, {}))}}
+        else {throw new TypeError(`引数の形式が不正です。${this.#NAMES}の順に渡すか、それらをキーとして持つオブジェクトを渡してください。`)}
+    }
+}
 
 // JavaScriptは数をNumber型で扱うが、これは64bitメモリであり、かつIEEE754の倍精度浮動小数点数で実装されている。このため十進数表示において、整数は15桁まで、少数は17桁までは正確に表現できるが、それ以上の桁になると正確に表現できず、比較式も不正確な結果を返してしまう。しかもそれを正常とし、エラーを発生させない。
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
+    static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
+        const o = QuantityArgs.argsPattern(...args);
+        isFloat(o.value, 'value');
+        isBool(o.naned, 'naned');
+        isBool(o.infinited, 'infinited');
+        isBool(o.unsafed, 'unsafed');
+        isBool(o.unsigned, 'unsigned');
+        if (!isNu(o.min)) {isFloat(o.min, 'min')}
+        if (!isNu(o.max)) {isFloat(o.max, 'max')}
+        // 整合性(!Number.isSafeInteger(value)だと整数でなく少数が入った時に必ずエラーに成ってしまう。IsSafe()関数があれば良かったのに存在しない……)
+        if(!o.unsafed && (o.value < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < o.value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
+        const [MIN, MAX] = getNumRange(o.unsafed, o.unsigned, o.min, o.max);
+        // unsafed/unsigned/bit と min/max が矛盾しないこと
+        validRange(MIN, o.min, 'min');
+        validRange(MAX, o.max, 'max');
+        console.log('o.min:',o.min, 'o.max:',o.max, 'MIN:',MIN, 'MAX',MAX);
+        if (undefined===o.min) {o.min=MIN}
+        if (undefined===o.max) {o.max=MAX}
+        validMinMax(o.min, o.max);
+        return o;
+    }
+    /*
     static validate(value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         isFloat(value, 'value');
         isBool(naned, 'naned');
@@ -59,10 +117,18 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
             max: MAX,
         };
     }
+    */
+    constructor(...args) {//value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
+        const o = Quantity.validate(...args);
+        super(o.value);
+        this._ = o;
+    }
+    /*
     constructor(value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         super(value);
         this._ = Quantity.validate(value, naned, infinited, unsafed, unsigned, min, max);
     }
+    */
     validate(v) {return Quantity.validate(v ?? this.valueOf(), this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max);}
     valueOf() {return this.value}
     get value() {return this._.value}
@@ -92,9 +158,7 @@ class Finite extends AllFinite {// 安全(Number.M(IN|AX)_SAFE_INTEGER範囲内)
         super(value, false, unsigned, min, max);
     }
 }
-//class Float extends Quantity {// NaN,Infinityを制限した有限数
-//class Float extends Finite {
-class AllFloat extends Finite {// NaN,Infinityを制限した有限数
+class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infinityを除き安全な有限数のみ。
     static validate(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         return Quantity.validate(value, false, false, unsafed, unsigned, min, max);
     }
@@ -140,12 +204,12 @@ class Percent extends AllFloat { constructor(value) {super(value, false, true, 0
 
 // 最近接遇数丸め（銀行家丸め。四捨五入時に5の時偶数になるほうへ丸める）
 // roundToNearestEven()
-// roundToEven()
+// halfEven()
 console.log(Math)
 console.log(Math.prototype)
 Math.isOdd = function(v) {return 0!==(v % 2)} // 1===だと -1 が渡された時バグった
 Math.isEven = function(v) {return 0===(v % 2)}
-Math.roundToEven = function(v) {
+Math.halfEven = function(v) {
     const I = Math.trunc(v);
     const F = v - I;
     const G = Math.trunc(F * 10); // 少数第一位の整数値(0〜9)
@@ -158,7 +222,7 @@ Math.roundToEven = function(v) {
 // https://qiita.com/k8o/items/fec737cdcc290776a9ac
 class NumberRounder {
     static round(radix, fractionDigits=1) {return this.#round('round', radix, fractionDigits);} // 四捨五入
-    static roundToEven(radix, fractionDigits=1) {return this.#round('roundToEven', radix, fractionDigits);} // 最近接偶数丸め（四捨五入の対象が5の時偶数になるようにする）
+    static halfEven(radix, fractionDigits=1) {return this.#round('halfEven', radix, fractionDigits);} // 最近接偶数丸め（四捨五入の対象が5の時偶数になるようにする）
     static ceil(radix, fractionDigits=1) {return this.#round('ceil', radix, fractionDigits);} // 切り上げ
     static floor(radix, fractionDigits=1) {return this.#round('floor', radix, fractionDigits);} // 切り捨て（負数はより大きい負数になってしまうことがあり単純な切り捨てでない）
     static trunc(radix, fractionDigits=1) {return this.#round('trunc', radix, fractionDigits);} // 切り捨て（負数も単純な切り捨てになる）
@@ -177,7 +241,7 @@ class NumberRounder {
 class RoundableFloat extends AllFloat {// IEEE754による倍精度浮動小数点数であり誤差はあるが、文字列化した時だけはその誤差を丸める（少数部を整数化して切り捨てた文字を返す）
     static get MIN_FIG() {return 0}
     static get MAX_FIG() {return 15}
-    static get METHOD_NAMES() {return 'ceil floor round roundToEven trunc'.split(' ')}
+    static get METHOD_NAMES() {return 'ceil floor round halfEven trunc'.split(' ')}
     static validFig(fig) {if (Number.isSafeInteger(fig) && fig < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < fig) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}; return true;}// Number型の実装IEEE754倍精度浮動小数点数は十進数で整数部15桁、少数部17桁まで保証される。誤差をなくすため小数部を整数化するから15桁が上限。
     static validMethodName(name) {if ('string'===typeof name && !this.METHOD_NAMES.some(n=>n===name)) {throw new TypeError(`methodName「${name}」は不正です。次のいずれかであるべきです。:${this.METHOD_NAMES}`)}; return true;}
     static validValueFig(valueFigMethod) {
@@ -268,8 +332,8 @@ class RounderFloat extends RoundableFloat {
     }
 }
 class RoundFloat extends RounderFloat {constructor(valueFig, methodName, unsafed=false, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'round', unsafed, unsigned, min, max)}}
-class RoundToEvenFloat extends RounderFloat {constructor(valueFig, methodName, unsafed=false, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'roundToEven', unsafed, unsigned, min, max)}}
-class TrunFloat extends RounderFloat {constructor(valueFig, methodName, unsafed=false, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'trunc', unsafed, unsigned, min, max)}}
+class HalfEvenFloat extends RounderFloat {constructor(valueFig, methodName, unsafed=false, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'halfEven', unsafed, unsigned, min, max)}}
+class TruncFloat extends RounderFloat {constructor(valueFig, methodName, unsafed=false, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'trunc', unsafed, unsigned, min, max)}}
 class FloorFloat extends RounderFloat {constructor(valueFig, methodName, unsafed=false, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'floor', unsafed, unsigned, min, max)}}
 class CeilFloat extends RounderFloat {constructor(valueFig, methodName, unsafed=false, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'ceil', unsafed, unsigned, min, max)}}
 
@@ -489,6 +553,7 @@ class IntegerDecimal extends NumberDecimal {// 十進数における整数と少
 }
 class AllInteger extends Quantity {
     static validate(value, unsafed=false, unsigned=false, bit=0, min=undefined, max=undefined) {
+        console.log(`AllInteger.validate:`, value, unsafed, unsigned, bit, min, max);
         if (unsafed && bit) {// 論理矛盾を解消する
             console.warn(`unsafed=trueなら範囲制限なしになります。つまり、bit=0,min=undefined,max=undefinedになります。`)
             min = undefined;
@@ -498,17 +563,32 @@ class AllInteger extends Quantity {
         return {...Quantity.validate(value, false, false, unsafed, unsigned, min, max), ...this.validateMinMax(unsafed, unsigned, bit, min, max)};
     }
     static validateMinMax(unsafed, unsigned, bit, min, max) {
+        console.log('AllInteger.validateMinMax:', unsafed, unsigned, bit, min, max);
         const [MIN, MAX] = getIntRange(unsafed, unsigned, bit, min, max);
         // unsafed/unsigned/bit と min/max が矛盾しないこと
         validRange(MIN, min, 'min');
         validRange(MAX, max, 'max');
-        return {min:MIN, max:MAX};
+        const Min = 'number'===typeof min ? min : MIN;
+        const Max = 'number'===typeof max ? max : MAX;
+        console.log(min, max, MIN, MAX, Min, Max);
+        validMinMax(Min, Max);
+        return {min:Min, max:Max};
+//        const Min = undefined===min ? MIN : min;
+//        const Max = undefined===max ? MAX : max;
+//        if (undefined===min) {min=MIN}
+//        if (undefined===max) {max=MAX}
+//        validMinMax(min, max);
+//        validMinMax(MIN, MAX);
+//        return {min:min, max:max};
+//        validMinMax(o.min, o.max);
+//        validMinMax(MIN, MAX);
+//        return {min:MIN, max:MAX};
     }
     constructor(value, unsafed=false, unsigned=false, bit=0, min=undefined, max=undefined) {
         super(value);
         //this._ = {...Integer.validate(value, unsafed, unsigned, bit, min, max)};
-        this._ = Integer.validate(value, unsafed, unsigned, bit, min, max);
-
+        //this._ = Integer.validate(value, unsafed, unsigned, bit, min, max);
+        this._ = AllInteger.validate(value, unsafed, unsigned, bit, min, max);
     }
     get bit() {return this._.bit}
     validate(v) {return AllInteger.validate(v ?? this.value, this._.unsafed, this._.unsigned, this._.bit, this._.min, this._.max);}
@@ -521,13 +601,17 @@ class FuzzyInteger extends AllInteger {
 }
 class Integer extends AllInteger {
     static validate(value, unsigned=false, bit=0, min=undefined, max=undefined) {
+        console.log('Integer.validate:', value, unsigned, bit, min, max);
         if (!Number.isSafeInteger(value)) {throw new TypeError(`valueはNumber.isSafeInteger()で真を返す値のみ有効です。:${value}`)}
-        return {...Quantity.validate(value, false, false, false, unsigned, min, max, 0), ...this.validateMinMax(unsigned, bit, min, max)};
+        //return {...Quantity.validate(value, false, false, false, unsigned, min, max, 0), ...this.validateMinMax(unsigned, bit, min, max)};
+        return {...Quantity.validate(value, false, false, false, unsigned, min, max), ...this.validateMinMax(unsigned, bit, min, max)};
     }
     static validateMinMax(unsigned, bit, min, max) {return AllInteger.validateMinMax(false, unsigned, bit, min, max);}
     constructor(value, unsigned=false, bit=0, min=undefined, max=undefined) {
+        console.log('Integer.constructor:', value, unsigned, bit, min, max);
         super(value, false, unsigned, bit, min, max);
-        this._ = Integer.validate(value, false, unsigned, bit, min, max);
+        //this._ = Integer.validate(value, false, unsigned, bit, min, max);
+        this._ = Integer.validate(value, unsigned, bit, min, max);
         console.log(this._);
     }
     validate(v) {return Integer.validate(v ?? this.value, this._.unsigned, this._.bit, this._.min, this._.max);}
@@ -1020,12 +1104,21 @@ class Typed {
 class Valid {
     static valid(type, value) {}
 }
+class Base32 extends String {// [A-Z2-7]
+
+}
+class Base32Hex extends String {// [0-9A-V]
+
+}
+
+
 class Base64 extends String {
     static #NUMBER = '0123456789';
     static #ALPHABET_L = 'abcdefghijklmnopqrstuvwxyz';
     static #ALPHABET_U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     static #SYMBOL = {
-        BASE: '+/',
+        HEX: '+/',       // 16進数と同じ順序にする（使用する記号は基本形と同じだが、0-9A-Za-z+/の順である）
+        BASE: '+/',      // 基本形
         URL: '-_',
         FILE: '+-',      // ファイル名
         XML_TOKEN: '.-', // XMLトークン
@@ -1034,28 +1127,34 @@ class Base64 extends String {
         SRC_ID_2: '._',  // プログラム識別子
         SRC_ID_3: '_$',  // プログラム識別子（JavaScriptで使用可能）
         REGEXP: '!-',    // 正規表現
+        ASCII_SORT_1: '{}',// ASCII文字コードにおいて文字をソートした時に大小関係が保たれること（Base文字はASCIIコードポイントの大小関係順であること）ファイル名に最適？
+        ASCII_SORT_2: '|~',// ASCII文字コードにおいて文字をソートした時に大小関係が保たれること（Base文字はASCIIコードポイントの大小関係順であること）ファイル名に最適？
     };
-
     static #SYMBOL_NAMES = [...Object.keys(this.#SYMBOL)];
-    /*
-    static #SYMBOL = '+/';
-    static #SYMBOL_URL = '-_';
-    static #SYMBOL_FILE = '+-';
-    static #SYMBOL_XML_TOKEN = '.-';
-    static #SYMBOL_XML_ID = '_:';
-    static #SYMBOL_SRC_ID_1 = '_-'; // プログラム識別子
-    static #SYMBOL_SRC_ID_2 = '._'; // プログラム識別子
-    static #SYMBOL_SRC_ID_3 = '_$'; // プログラム識別子（JavaScriptで使用可能）
-    static #SYMBOL_REGEXP = '!-';
-    */
     static #PADDING = '=';
     static #ENCODE_CHAR = this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + this.#SYMBOL;
     static #DECORD_CHAR = Object.fromEntries(Object.entries(this.#ENCODE_CHAR).map(([i, ch]) => [ch, i]));
     static #toBase64(base64url) {// Base64URLをBase64に変換する
-        // 1. URLセーフな文字 '-', '_' をそれぞれ '+', '/' に戻す
-        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
-        const paddingNeeded = (4 - (base64.length % 4)) % 4;
-        return base64 + '='.repeat(paddingNeeded);
+        const base64 = this.#replaceSymbol(base64url, this.#SYMBOL.URL, this.#SYMBOL.BASE);
+//        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        return base64 + this.#addPadding(base64str);
+    }
+    static #replaceSymbol(base64str, srcSym, dstSym) {
+        if ('string'!==typeof base64str) {throw new TypeError(`base64strはプリミティブ型文字列であるべきです。`)}
+        if (!(Array.isArray(srcSym) && 2===srcSym.length && srcSym.every(v=>'string'===typeof v && 1===v.length))) {throw new TypeError(`srcSymは長さ1の任意文字二つを持つ配列であるべきです。`)}
+        if (!(Array.isArray(dstSym) && 2===dstSym.length && dstSym.every(v=>'string'===typeof v && 1===v.length))) {throw new TypeError(`dstSymは長さ1の任意文字二つを持つ配列であるべきです。`)}
+        const srcReg0 = new RegExp(`${srcSym[0]}`,'g');
+        const srcReg1 = new RegExp(`${srcSym[1]}`,'g');
+        //const base64 = base64str.replace(srcReg0, dstSym[0]).replace(srcReg1, dstSym[1]);
+//        const base64 = base64str.replace(new RegExp(`${srcSym[0]}`,'g'), dstSym[0]).replace(new RegExp(`${srcSym[1]}`,'g'), dstSym[1]);
+        return [0,1].reduce((str,i)=>str.replace(new RegExp(`${srcSym[i]}`,'g'), dstSym[i]), base64str);
+//        const base64 = [0,1].reduce((str,i)=>str.replace(new RegExp(`${srcSym[i]}`,'g'), dstSym[i]), base64str);
+//        return base64 + 
+    }
+    static #addPadding(base64str) {
+        if (base64str.endsWith(this.#PADDING)) {return base64str}
+        const paddingNeeded = (4 - (base64str.length % 4)) % 4;
+        return base64str + this.#PADDING.repeat(paddingNeeded);
     }
     static #getSymbol(symbolType='BASE') {
         return (Array.isArray(symbolType) && 2===symbolType.length && symbolType.every(v=>(('string'===typeof v) && (1===v.length))))
@@ -1066,7 +1165,11 @@ class Base64 extends String {
     }
     static #getChars(symbolType='BASE') {
         const SYMBOL = this.#getSymbol(symbolType);
-        const ENCODE_CHAR = this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + SYMBOL;
+//        const ENCODE_CHAR = this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + SYMBOL;
+        //const ENCODE_CHAR = 'HEX'===symbolType
+        const ENCODE_CHAR = ['HEX','ASCII_SORT_1','ASCII_SORT_2'].some(v=>v===symbolType)
+            ? this.#NUMBER + this.#ALPHABET_U + this.#ALPHABET_L + SYMBOL
+            : this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + SYMBOL;
         const DECORD_CHAR = Object.fromEntries(Object.entries(ENCODE_CHAR).map(([i, ch]) => [ch, i]));
         return [ENCODE_CHAR, DECORD_CHAR, SYMBOL];
     }
@@ -1077,17 +1180,6 @@ class Base64 extends String {
     static decode(base64str, symbolType) {
         if ('string'!==typeof base64str) {throw new TypeError(`base64strはString型プリミティブ値であるべきです。`)}
         if (undefined===symbolType) {symbolType = 'BASE'}
-        /*
-//[...Object.keys(this.#SYMBOL)].some(n=>n===symbolType)
-//        const SYMBOL = (Array.isArray(symbolType) && 2===symbolType.length && symbolType.every(v=>'string'===typeof v && 1===v.length))
-//            ? symbolType;
-//            : this.#SYMBOL[symbolType];
-        const SYMBOL = (Array.isArray(symbolType) && 2===symbolType.length && symbolType.every(v=>'string'===typeof v && 1===v.length))
-            ? symbolType;
-            : ((this.#SYMBOL_NAMES.some(n=>n===symbolType)) ? this.#SYMBOL[symbolType] : ({throw new TypeError(`symbolTypeが不正です。次の値か任意の文字二個を持つ配列であるべきです。:${symbolType} :有効値:${this.#SYMBOL_NAMES} または ['+','/'] 等。`)})());
-        const ENCODE_CHAR = this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + SYMBOL;
-        const DECORD_CHAR = Object.fromEntries(Object.entries(ENCODE_CHAR).map(([i, ch]) => [ch, i]));
-        */
         const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = this.#getChars(symbolType);
         return Uint8Array.from(
             base256str.split('').map(ch => {
@@ -1095,28 +1187,17 @@ class Base64 extends String {
                 return this.#DECORD_CHAR[ch];
             })
         );
-        /*
-        let SYMBOL = null
-        if (Array.isArray(symbolType) && 2===symbolType.length && symbolType.every(v=>'string'===typeof v)) {SYMBOL = symbolType}
-        else {
-            const NAMES = [...Object.keys(this.#SYMBOL)];
-            if (!NAMES.some(n=>n===symbolType)) {throw new TypeError(`symbolTypeが不正です。次の値か任意の文字二個を持つ配列であるべきです。:${v} :有効値:${NAMES}`)}
-            SYMBOL = this.#SYMBOL[symbolType]
-        }
-        */
     }
-    constructor(value, symbolType) {
+    constructor(value, symbolType, hasPadding) {
         const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = Base64.#getChars(symbolType);
-        this._ = {chars:{en:ENCODE_CHAR, de:DECORD_CHAR, sym:SYMBOL}}
-        this._.value = {str:value, ui8a: Base64.decode(value, symbolType), num:this.#toNumber(), int:this.#toBigInt()}
-//        this._.uint8Array = Base64.decode(value, symbolType);
-//        this._.
+        this._ = {chars:{en:ENCODE_CHAR, de:DECORD_CHAR, sym:SYMBOL}};
+        this._.value = {str:value, ui8a: Base64.decode(value, symbolType), num:this.#toNumber(), int:this.#toBigInt()};
+        this._.hasPadding = 'boolean'===typeof hasPadding ? hasPadding : sameArys(this.#SYMBOL.BASE, SYMBOL); // 基本形と同じなら=埋めするが、違えば=埋めしない
     }
     get chars() {return this._.chars.en}
     get string() {return this._.value.str}
     get uint8Array() {return this._.value.ui8a}
     get number() {return this._.value.num;}
-    //get number() { this._.value.num = this.#toNumber(true); return this._.value.num; }
     #toNumber(isThrow=false) {
         if (53 < this._.value.ui8a.byteLength) {
             const MSG = `53bitより大きいため変換不能です。`;
@@ -1136,27 +1217,18 @@ class Base64 extends String {
         this._.value.int = BigInt('0x' + hexString);
         return this._.value.int;
     }
-    /*
-    encode(uint8array, symbolType) {
-        const V = uint8array ?? this._.value.ui8a;
-        if (!(V instanceof Uint8Array)) {throw new TypeError(`引数はUint8Array型インスタンスであるべきです。`)}
-        if (undefined===symbolType) {symbolType = 'BASE'}
-        const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = Base64.#getChars(symbolType ?? this._.chars.sym);
-        return V.reduce((acc, b) => acc + ENCODE_CHAR[b], '');
+    convert(symbolType, hasPadding) {// Base64を亜種に変換する
+        const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = Base64.#getChars(symbolType);
+        let S = '';
+        const PAD_IDX= this._.value.str.indexOf('=');
+        const PADDING = -1 < PAD_IDX ? this._.value.str.slice(PAD_IDX) : '';
+//        const BASE64 = -1 < PAD_IDX ? this._.value.str.slice(0, PAD_IDX) : this._.value.str;
+        const BASE64 = this._.value.str.slice(0, (-1 < PAD_IDX ? PAD_IDX : this._.value.str.length));
+//        const PADDING = this._.value.str.endsWith(this.#PADDING) ? this._.value.str.slice(0, this._.value.str.indexOf('=')) : '';
+        return BASE64.map(c=>ENCODE_CHAR[this._.chars.de[c]]).join('') + (('boolean'===typeof hasPadding ? hasPadding : this._.hasPadding) ? PADDING : '');
+//        return this._.value.str.map(c=>ENCODE_CHAR[this._.chars.de[c]]).join('');
+//        for (let c of this._.value.str) { S += ENCODE_CHAR[this._.chars.de[c]] }
     }
-    decode(base64str, symbolType) {
-        if ('string'!==typeof base64str) {throw new TypeError(`base64strはString型プリミティブ値であるべきです。`)}
-        if (undefined===symbolType) {symbolType = 'BASE'}
-        const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = Base64.#getChars(symbolType ?? this._.chars.sym);
-        return Uint8Array.from(
-            base64str.split('').map(ch => {
-                if (!(ch in DECORD_CHAR)) {throw Error("Cannot decode character '" + ch.charCodeAt(0) + "', not Braille.")}
-                return DECORD_CHAR[ch];
-            })
-        );
-    }
-    */
-
 }
 class Base64URL extends String {
 
@@ -1290,15 +1362,24 @@ console.assert(3.14===MATH.PI);
     ObservedObject: ObservedObject,
     FixedObject: FixedObject,
     C: {// C=Class
-        Q: Quantity,
-        Quant: Quantity,
         Quantity: Quantity,
+        Quant: Quantity,
+        Q: Quantity,
+        UnsafedFinite: UnsafedFinite,
+        Finite: Finite,
         F: Float,
         Flt: Float,
         Float: Float,
-        I: Integer,
-        Int: Integer,
+        RoundableFloat: RoundableFloat,
+        RounderFloat: RounderFloat,
+        RoundFloat: RoundFloat,
+        HalfEvenFloat: HalfEvenFloat,
+        FloorFloat: FloorFloat,
+        TruncFloat: TruncFloat,
+        CeilFloat: CeilFloat,
         Integer: Integer,
+        Int: Integer,
+        I: Integer,
         NumberDecimal: NumberDecimal,
         NumDec: NumberDecimal,
         IntegerDecimal: IntegerDecimal,
@@ -1327,8 +1408,8 @@ console.assert(3.14===MATH.PI);
         rounder:(...args)=>new RounderFloat(...args),
         roundFloat:(...args)=>new RoundFloat(...args),
         round:(...args)=>new RoundFloat(...args),
-        roundToEvenFloat:(...args)=>new RoundToEvenFloat(...args),
-        roundToEven:(...args)=>new RoundToEvenFloat(...args),
+        halfEvenFloat:(...args)=>new HalfEvenFloat(...args),
+        halfEven:(...args)=>new HalfEvenFloat(...args),
         floorFloat:(...args)=>new FloorFloat(...args),
         floor:(...args)=>new FloorFloat(...args),
         truncFloat:(...args)=>new TruncFloat(...args),
