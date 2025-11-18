@@ -130,7 +130,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 2===q.min && 8===q.max;
     });
     a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:8,2`, ()=>Obs.T.q(123, true, true, true, true, 8, 2));
-    console.error(Obs.T.q({max:Number.MAX_SAFE_INTEGER+1})); // maxが不正値のはずだがエラーにならず…
+    a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:9007199254740992`, ()=>Obs.T.q({max:Number.MAX_SAFE_INTEGER+1}));
+    a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-9007199254740992`, ()=>Obs.T.q({min:Number.MIN_SAFE_INTEGER-1}));
     a.t(()=>{
         const q = Obs.T.q({});
         return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;

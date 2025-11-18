@@ -11,7 +11,11 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
         const isOver = 'min'===name ? actual < expected : expected < actual;
         if (isOver) {throw new RangeError(`${name}はunsigned,bitで設定した範囲より${'min'===name ? '小さい' : '大きい'}です。範囲内に指定してください。:expected:${expected}, actual:${actual}`)}
     },
-    getNumRange = (unsafed, unsigned, min, max)=>[(min ?? (unsigned ? 0 : (unsafed ? -Number.MAX_VALUE : Number.MIN_SAFE_INTEGER))), (max ?? (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER))];
+    getNumRange = (unsafed, unsigned, min, max)=>{
+        const [MIN, MAX] = [(unsigned ? 0 : (unsafed ? -Number.MAX_VALUE : Number.MIN_SAFE_INTEGER)),
+                            (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER)];
+        return [(min && MIN<=min ? min : MIN), (max && min<=MAX ? max : MAX)];
+    },
     getIntRange = (unsafed, unsigned, bit, min, max)=>[(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
     validMinMax = (min, max)=>{if(max <= min){throw new RangeError(`minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:${min},${max}`)}},
     isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v),
