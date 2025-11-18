@@ -1,21 +1,37 @@
 (function(){
 const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object.prototype.toString.call(v),
+    isInf = (v)=>[Infinity,-Infinity].some(x=>x===v),
+    isNanInf = (value,naned,infinited)=>{
+        if (Number.isNaN(value) && !naned) {throw new TypeError(`naned=falseなのにvalue=NaNです。`)}
+        if ([Infinity,-Infinity].some(v=>v===value) && !infinited) {throw new TypeError(`infinited=falseなのにvalue=${value}です。`)}
+        return true;
+    }
     getFIError = (v,n,isI=false)=>new TypeError(`${n}はNumber型有限${isI ? '整' : '実'}数リテラル値(非NaN)であるべきです。:${v}`),
     isNum = (v)=>'number'===typeof v || !Number.isNaN(v);
     isFloat = (v,n)=>{if (!isNum(v) || !Number.isFinite(v)) {throw getFIError(v,n)} return true;},
     isInt = (v,n)=>{if (!isNum(v) || !Number.isInteger(v)) {throw getFIError(v,n,true)} return true;},
     isBool = (v,n)=>{if ('boolean'!==typeof v) {throw new TypeError(`${n}は真偽値であるべきです。:${v}`)}}
-    validRange = (expected, actual, name)=>{
+    validRange = (infinited, expected, actual, name)=>{
+    //validRange = (expected, actual, name)=>{
         console.log('validRange', expected, actual, name);
+        if (Number.isNaN(actual)) {throw new TypeError(`min/maxにNaNは設定できません。`)}
+        if ([Infinity,-Infinity].some(v=>v===actual) && !infinited) {throw new TypeError(`infinited=falseなのにvalue=${actual}です。`)}
         if (!'min max'.split(' ').some(v=>v===name)) {throw new TypeError('nameはminかmaxのみ有効です。')}
         const isOver = 'min'===name ? actual < expected : expected < actual;
         if (isOver) {throw new RangeError(`${name}はunsigned,bitで設定した範囲より${'min'===name ? '小さい' : '大きい'}です。範囲内に指定してください。:expected:${expected}, actual:${actual}`)}
     },
+    getNumRange = (infinited, unsafed, unsigned, min, max)=>{
+        const [MIN, MAX] = [(unsigned ? 0 : infinited ? -Infinity : (unsafed ? -Number.MAX_VALUE : Number.MIN_SAFE_INTEGER)),
+                            infinited ? Infinity : (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER)];
+        return [(min && MIN<=min ? min : MIN), (max && min<=MAX ? max : MAX)];
+    },
+    /*
     getNumRange = (unsafed, unsigned, min, max)=>{
         const [MIN, MAX] = [(unsigned ? 0 : (unsafed ? -Number.MAX_VALUE : Number.MIN_SAFE_INTEGER)),
                             (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER)];
         return [(min && MIN<=min ? min : MIN), (max && min<=MAX ? max : MAX)];
     },
+    */
     getIntRange = (unsafed, unsigned, bit, min, max)=>[(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
     validMinMax = (min, max)=>{if(max <= min){throw new RangeError(`minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:${min},${max}`)}},
     isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v),
@@ -44,7 +60,6 @@ class VarAssignable {// 変数への代入可能性。型を定義するのに�
 // (options)
 // (value, options)
 // (value, naned, ...)
-
 class QuantityArgs {
     static get #NAMES() {return 'value naned infinited unsafed unsigned min max'.split(' '); }
     static get #defaultOptions() { return {
@@ -77,19 +92,33 @@ class QuantityArgs {
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
         const o = QuantityArgs.argsPattern(...args);
-        isFloat(o.value, 'value');
+        //if (o.infinited && !o.unsafed) {console.warn(`論理矛盾です。infinited=trueなのにunsafed=falseです。unsafed=trueに強制`); o.unsafed=true;}
+        if (o.infinited && !o.unsafed) {throw new TypeError(`論理矛盾です。infinited=trueなのにunsafed=falseです。unsafed=trueにすべきです。`);}
         isBool(o.naned, 'naned');
         isBool(o.infinited, 'infinited');
         isBool(o.unsafed, 'unsafed');
         isBool(o.unsigned, 'unsigned');
-        if (!isNu(o.min)) {isFloat(o.min, 'min')}
-        if (!isNu(o.max)) {isFloat(o.max, 'max')}
+        // 論理矛盾を解消する（infinited:trueならunsafed:trueになるはず。無限値は入るのに範囲は安全圏のみは不自然だから。でも、そうしたい場合もありそう）
+
+//        isNaNInf(o) {return ('number'===typeof o.value && !(!naned && Number.isNaN(o.value)) && !(!infinited && [Infinity,-Infinity].some(x=>x===o.value)))}
+//        if ('number'===typeof o.value && !(!naned && Number.isNaN(o.value)) && !(!infinited && [Infinity,-Infinity].some(x=>x===o.value)))
+        isNanInf(o.value, o.naned, o.infinited);
+//        isFloat(o.value, 'value');
+        if (!isNu(o.min)) {isNanInf(o.min, o.naned, o.infinited);}
+        if (!isNu(o.max)) {isNanInf(o.max, o.naned, o.infinited);}
+//        if (!isNu(o.min)) {isNanInf(o.min, o.naned, o.infinited); isFloat(o.min, 'min');}
+//        if (!isNu(o.max)) {isNanInf(o.max, o.naned, o.infinited); isFloat(o.max, 'max')}
+//        if (!isNu(o.min)) {isFloat(o.min, 'min')}
+//        if (!isNu(o.max)) {isFloat(o.max, 'max')}
         // 整合性(!Number.isSafeInteger(value)だと整数でなく少数が入った時に必ずエラーに成ってしまう。IsSafe()関数があれば良かったのに存在しない……)
+//        (!o.infinited && [Infinity,-Infinity].some(x=>x===o.value)) || 
+//        if(!isInf(o.value) && !o.unsafed && (o.value < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < o.value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
         if(!o.unsafed && (o.value < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < o.value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
-        const [MIN, MAX] = getNumRange(o.unsafed, o.unsigned, o.min, o.max);
+        const [MIN, MAX] = getNumRange(o.infinited, o.unsafed, o.unsigned, o.min, o.max);
+        //const [MIN, MAX] = getNumRange(o.unsafed, o.unsigned, o.min, o.max);
         // unsafed/unsigned/bit と min/max が矛盾しないこと
-        validRange(MIN, o.min, 'min');
-        validRange(MAX, o.max, 'max');
+        validRange(o.infinited, MIN, o.min, 'min');
+        validRange(o.infinited, MAX, o.max, 'max');
         console.log('o.min:',o.min, 'o.max:',o.max, 'MIN:',MIN, 'MAX',MAX);
         if (undefined===o.min) {o.min=MIN}
         if (undefined===o.max) {o.max=MAX}
@@ -570,8 +599,8 @@ class AllInteger extends Quantity {
         console.log('AllInteger.validateMinMax:', unsafed, unsigned, bit, min, max);
         const [MIN, MAX] = getIntRange(unsafed, unsigned, bit, min, max);
         // unsafed/unsigned/bit と min/max が矛盾しないこと
-        validRange(MIN, min, 'min');
-        validRange(MAX, max, 'max');
+        validRange(false, MIN, min, 'min');
+        validRange(false, MAX, max, 'max');
         const Min = 'number'===typeof min ? min : MIN;
         const Max = 'number'===typeof max ? max : MAX;
         console.log(min, max, MIN, MAX, Min, Max);

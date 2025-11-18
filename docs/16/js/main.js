@@ -115,27 +115,156 @@ window.addEventListener('DOMContentLoaded', (event) => {
     });
     a.t(()=>{
         const q = Obs.T.q(123, true, true);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited && !q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, false, true);
+        console.log(q.min, q.max)
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited &&  q.unsafed && !q.unsigned && -Number.MAX_VALUE===q.min && Number.MAX_VALUE===q.max;
     });
     a.t(()=>{
         const q = Obs.T.q(123, true, true, true);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Number.MAX_VALUE===q.min && Number.MAX_VALUE===q.max;
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, false, true, true);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited &&  q.unsafed &&  q.unsigned && 0===q.min && Number.MAX_VALUE===q.max;
     });
     a.t(()=>{
         const q = Obs.T.q(123, true, true, true, true);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 0===q.min && Number.MAX_VALUE===q.max;
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 0===q.min && Infinity===q.max;
     });
     a.t(()=>{
         const q = Obs.T.q(123, true, true, true, true, 2, 8);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 2===q.min && 8===q.max;
     });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, true, true, 2);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 2===q.min && Infinity===q.max;
+    });
+    // min が取りうる論理値による各種上限値パターン
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, true, true, undefined, 8);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 0===q.min && 8===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, true, false, undefined, 8);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && 8===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, false, false, undefined, 8);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited && !q.unsafed && !q.unsigned && -Infinity===q.min && 8===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, false, false, false, undefined, 8);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && 8===q.max;
+    });
+    a.t(()=>{//
+        const q = Obs.T.q(123, true, false, true, false, undefined, 8);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited &&  q.unsafed && !q.unsigned && -Number.MAX_VALUE===q.min && 8===q.max;
+    });
+    // max が取りうる論理値による各種上限値パターン
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, true, true, 2, undefined);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 2===q.min && Infinity===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, true, false, 2, undefined);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && 2===q.min && Infinity===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, false, false, 2, undefined);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited && !q.unsafed && !q.unsigned && 2===q.min && Infinity===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, false, false, false, 2, undefined);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && 2===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{//
+        const q = Obs.T.q(123, true, false, true, false, 2, undefined);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited &&  q.unsafed && !q.unsigned && 2===q.min && Number.MAX_VALUE===q.max;
+    });
+    // 論理矛盾時エラーが出ること
     a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:8,2`, ()=>Obs.T.q(123, true, true, true, true, 8, 2));
     a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:9007199254740992`, ()=>Obs.T.q({max:Number.MAX_SAFE_INTEGER+1}));
     a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-9007199254740992`, ()=>Obs.T.q({min:Number.MIN_SAFE_INTEGER-1}));
+    a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:0, actual:-1`, ()=>Obs.T.q({unsigned:true, min:-1}));
+    // 本当はエラーに成って欲しいが出ない。JSの仕様上仕方ない。
+//    a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:9007199254740992`, ()=>Obs.T.q({unsafed:true, max:Number.MAX_VALUE+1}));
+//    a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:9007199254740992`, ()=>Obs.T.q({unsafed:true, min:-Number.MAX_VALUE-1}));
+
+    //a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:9007199254740992`, ()=>Obs.T.q({unsafed:true, max:Infinity}));
+    a.e(TypeError, `infinited=falseなのにvalue=Infinityです。`, ()=>Obs.T.q({unsafed:true, max:Infinity}));
+    a.e(TypeError, `infinited=falseなのにvalue=-Infinityです。`, ()=>Obs.T.q({unsafed:true, min:-Infinity}));
+    a.e(TypeError, `infinited=falseなのにvalue=Infinityです。`, ()=>Obs.T.q({unsafed:true, value:Infinity}));
+    a.e(TypeError, `infinited=falseなのにvalue=-Infinityです。`, ()=>Obs.T.q({unsafed:true, value:-Infinity}));
+    a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, max:Infinity}));
+    a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, min:-Infinity}));
+    a.e(RangeError, `valueはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, value:Infinity}));
+    a.e(RangeError, `valueはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, value:-Infinity}));
+    /*
+    a.t(()=>{
+        // Infinity は 範囲 Number.MAX_SAFE_INTEGER を超過しているため論理エラーにすべき
+        const q = Obj.var({infinited:true, value:Infinity});
+        return q instanceof Obs.C.Quantity && Infinity===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    */
+
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({unsafed:false, value:Number.MAX_SAFE_INTEGER+1}));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MAX_SAFE_INTEGER+1}));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
+/*
+    a.t(()=>{
+        const q = Obs.T.q({infinited:true, unsafed:false, value:Number.MAX_SAFE_INTEGER+1});
+        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+*/
+
+    // options引数
     a.t(()=>{
         const q = Obs.T.q({});
         return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
+    a.t(()=>{
+        const q = Obs.T.q({value:123});
+        return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q({naned:true});
+        return q instanceof Obs.C.Quantity && 0===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q({infinited:true});
+        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned &&  q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q({unsafed:true});
+        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited &&  q.unsafed && !q.unsigned && -Number.MAX_VALUE===q.min && Number.MAX_VALUE===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q({unsigned:true});
+        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed &&  q.unsigned && 0===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q({min:123});
+        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && 123===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q({max:123});
+        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && 123===q.max;
+    });
+    // (value,options)引数
+    a.t(()=>{
+        const q = Obs.T.q(123, {});
+        return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+
+
+
+
+
+
 
 
 
