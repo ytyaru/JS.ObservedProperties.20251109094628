@@ -51,7 +51,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
 //    a.t( 0===Math.halfEven(-0.5)); // 最近接偶数丸め
 //    a.t(-2===Math.halfEven(-1.5)); // 最近接偶数丸め
     a.t( 0===Math.halfEven(-0.5)); // 最近接偶数丸め
-    a.t(-1===Math.halfEven(-1.5)); // 最近接偶数丸め（偶数になってない……）
+    a.t(-2===Math.halfEven(-1.5)); // 最近接偶数丸め
 
     a.t('Quantity UnsafedFinite Finite Float RoundableFloat RounderFloat RoundFloat HalfEvenFloat FloorFloat TruncFloat CeilFloat Integer NumberDecimal'.split(' ').every(n=>Type.isCls(Obs.C[n])));
     a.t('quantity unsafedFinite finite float roundableFloat rounderFloat roundFloat halfEvenFloat floorFloat truncFloat ceilFloat integer numberDecimal'.split(' ').every(n=>'function'===typeof Obs.T[n]))
@@ -287,20 +287,31 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const q = Obs.T.q(123, {});
         return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
-
-
-
-
-
-
-
-
-
-
-
-
-
+    a.t(()=>{
+        const q = Obs.T.q(123, {naned:true});
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, {infinited:true});
+        console.log(q.value, q.infinited, q.unsafed)
+        return q instanceof Obs.C.Quantity && 123===q.value && !q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, {unsafed:true});
+        return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited &&  q.unsafed && !q.unsigned && -Number.MAX_VALUE===q.min && Number.MAX_VALUE===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, {unsigned:true});
+        return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited && !q.unsafed &&  q.unsigned && 0===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, {min:2});
+        return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && 2===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
+    a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:0, actual:-1`, ()=>Obs.T.q(123, {unsigned:true, min:-1}));
 //    Math.halfEven
+    
+
     a.t(()=>{
         /*
         const dec = Obs.T.ndec([123,45]); // 少数部が0のとき桁を指定できない！(整数部と少数部を数で指定する)

@@ -94,35 +94,21 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
         const o = QuantityArgs.argsPattern(...args);
         if (o.infinited) {
-            //if (undefined===o.unsafed) {console.warn(`infinited=trueでunsafed=undefinedのためunsafed=trueに強制します。`); o.unsafed=true;}
             if ('boolean'!==typeof o.unsafed) {console.warn(`infinited=trueでunsafedが未設定か非booleanのためunsafed=trueに強制します。`); o.unsafed=true;}
             else if (false===o.unsafed) {throw new TypeError(`論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`);}
         } else {o.unsafed = o.unsafed ?? false;}
-        //if (o.infinited && undefined===o.unsafed) {console.warn(`infinited=trueでunsafed=undefinedのためunsafed=trueに強制します。`); o.unsafed=true;}
-        //if (o.infinited && !o.unsafed) {console.warn(`論理矛盾です。infinited=trueなのにunsafed=falseです。unsafed=trueに強制します。`); o.unsafed=true;}
-//        if (o.infinited && !o.unsafed) {throw new TypeError(`論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`);}
         isBool(o.naned, 'naned');
         isBool(o.infinited, 'infinited');
         isBool(o.unsafed, 'unsafed');
         isBool(o.unsigned, 'unsigned');
         // 論理矛盾を解消する（infinited:trueならunsafed:trueになるはず。無限値は入るのに範囲は安全圏のみは不自然だから。でも、そうしたい場合もありそう）
-
-//        isNaNInf(o) {return ('number'===typeof o.value && !(!naned && Number.isNaN(o.value)) && !(!infinited && [Infinity,-Infinity].some(x=>x===o.value)))}
-//        if ('number'===typeof o.value && !(!naned && Number.isNaN(o.value)) && !(!infinited && [Infinity,-Infinity].some(x=>x===o.value)))
         isNanInf(o.value, o.naned, o.infinited);
 //        isFloat(o.value, 'value');
         if (!isNu(o.min)) {isNanInf(o.min, o.naned, o.infinited);}
         if (!isNu(o.max)) {isNanInf(o.max, o.naned, o.infinited);}
-//        if (!isNu(o.min)) {isNanInf(o.min, o.naned, o.infinited); isFloat(o.min, 'min');}
-//        if (!isNu(o.max)) {isNanInf(o.max, o.naned, o.infinited); isFloat(o.max, 'max')}
-//        if (!isNu(o.min)) {isFloat(o.min, 'min')}
-//        if (!isNu(o.max)) {isFloat(o.max, 'max')}
         // 整合性(!Number.isSafeInteger(value)だと整数でなく少数が入った時に必ずエラーに成ってしまう。IsSafe()関数があれば良かったのに存在しない……)
-//        (!o.infinited && [Infinity,-Infinity].some(x=>x===o.value)) || 
-//        if(!isInf(o.value) && !o.unsafed && (o.value < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < o.value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
         if(!o.unsafed && (o.value < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < o.value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
         const [MIN, MAX] = getNumRange(o.infinited, o.unsafed, o.unsigned, o.min, o.max);
-        //const [MIN, MAX] = getNumRange(o.unsafed, o.unsigned, o.min, o.max);
         // unsafed/unsigned/bit と min/max が矛盾しないこと
         validRange(o.infinited, MIN, o.min, 'min');
         validRange(o.infinited, MAX, o.max, 'max');
@@ -132,43 +118,11 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
         validMinMax(o.min, o.max);
         return o;
     }
-    /*
-    static validate(value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined) {
-        isFloat(value, 'value');
-        isBool(naned, 'naned');
-        isBool(infinited, 'infinited');
-        isBool(unsafed, 'unsafed');
-        isBool(unsigned, 'unsigned');
-        if (!isNu(min)) {isFloat(min, 'min')}
-        if (!isNu(max)) {isFloat(max, 'max')}
-        // 整合性(!Number.isSafeInteger(value)だと整数でなく少数が入った時に必ずエラーに成ってしまう。IsSafe()関数があれば良かったのに存在しない……)
-        if(!unsafed && (value < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < value)) {throw new TypeError(`非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`)}
-        const [MIN, MAX] = getNumRange(unsafed, unsigned, min, max);
-        // unsafed/unsigned/bit と min/max が矛盾しないこと
-        validRange(MIN, min, 'min');
-        validRange(MAX, max, 'max');
-        return {
-            value: value,
-            naned: naned,
-            infinited: infinited,
-            unsafed: unsafed,
-            unsigned: unsigned,
-            min: MIN,
-            max: MAX,
-        };
-    }
-    */
     constructor(...args) {//value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
         const o = Quantity.validate(...args);
         super(o.value);
         this._ = o;
     }
-    /*
-    constructor(value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined) {
-        super(value);
-        this._ = Quantity.validate(value, naned, infinited, unsafed, unsigned, min, max);
-    }
-    */
     validate(v) {return Quantity.validate(v ?? this.valueOf(), this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max);}
     valueOf() {return this.value}
     get value() {return this._.value}
@@ -237,11 +191,13 @@ class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infin
     }
     #setNearlyValue(v) {if (this.nearlyEqual(v, super.value)) {super.value = v}} // ほぼ同じ値ならピッタリの値をセットする。等号===比較できるように。
 }
-class UnsignedFloat extends AllFloat { constructor(value, min=undefined, max=undefined) { super(value, true, min, max); } }
 class Float extends AllFloat { constructor(value, min=undefined, max=undefined) { super(value, false, min, max); } }
-class Rate extends AllFloat { constructor(value) {super(value, false, true, 0, 1)} }// 比率(0〜1の実数)
-class Percent extends AllFloat { constructor(value) {super(value, false, true, 0, 100)} }// 百分率(0〜100の実数)
-
+class Rate extends AllFloat { constructor(value) {super(value, true, 0, 1)} }// 比率(0〜1の実数)
+class Percent extends AllFloat { constructor(value) {super(value, true, 0, 100)} }// 百分率(0〜100の実数)
+class UnsignedFloat extends AllFloat { constructor(value, min=undefined, max=undefined) { super(value, true, min, max); } }
+class UnsignedRate extends AllFloat { constructor(value) {super(value, true, 0, 1)} }// 比率(0〜1の実数)
+class UnsignedPercent extends AllFloat { constructor(value) {super(value, true, 0, 100)} }// 百分率(0〜100の実数)
+class CenterdFloat extends AllFloat { constructor(value, width) {super(value, false, -width, width)} }// 0を中心とした同じ幅をもつ実数
 // 最近接遇数丸め（銀行家丸め。四捨五入時に5の時偶数になるほうへ丸める）
 // roundToNearestEven()
 // halfEven()
@@ -250,13 +206,13 @@ console.log(Math.prototype)
 Math.isOdd = function(v) {return 0!==(v % 2)} // 1===だと -1 が渡された時バグった
 Math.isEven = function(v) {return 0===(v % 2)}
 Math.halfEven = function(v) {
-    const I = Math.trunc(v);
-    const F = v - I;
+    const S = v < 0 ? -1 : 1;
+    const V = Math.abs(v);
+    const I = Math.trunc(V);
+    const F = V - I;
     const G = Math.trunc(F * 10); // 少数第一位の整数値(0〜9)
-    const [C, T] = [Math.ceil(v), Math.trunc(v)];
-    return 5 < G ? C : ((G < 5) ? T : (this.isEven(C) ? C : T)); // 少数第一位の整数値が5なら偶数に丸める。他は四捨五入と同じ
-//    const [C, T] = [Math.ceil(v), Math.trunc(v)];
-//    return this.isEven(C) ? C : T;
+    const [C, T] = [Math.ceil(V), Math.trunc(V)];
+    return (5 < G ? C : ((G < 5) ? T : (this.isEven(C) ? C : T))*S); // 少数第一位の整数値が5なら偶数に丸める。他は四捨五入と同じ
 }
 // 丸め
 // https://qiita.com/k8o/items/fec737cdcc290776a9ac
@@ -333,23 +289,11 @@ class RoundableFloat extends AllFloat {// IEEE754による倍精度浮動小数�
         return ({value:NumberRounder.trunc(V[0], V[1]), fig:V[1], methodName:methodName});
     }
     constructor(valueFigMethod, unsigned=false, min=undefined, max=undefined) {
-    //constructor(valueFigMethod, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         const o = DecimalFloat.validValueFig(valueFig);
-        //super(0, unsafed, unsigned, min, max);
         super(0, unsigned, min, max);
         this._ = {...this._, ...o};
     }
     toFixed(fig) {return Number.toFixed(fig ?? this._.fig)} // 123.456789, fig:2 => 123.46
-    /*
-    toTrunc(fig) {
-        if (Number.isSafeInteger(fig) && (V[1] < FixedFloat.MIN_FIG || FixedFloat.MAX_FIG < V[1])) {throw new TypeError(`figは0〜15の整数値であるべきです。`)}
-        const D = 10**this._.fig; // 0:1, 1:10, 2:100, ... figが15までであるべき理由はNumber型の整数が十進数の15桁までしか安全に計測できないから。
-        const I = Math.trunc(this.value);
-        const F = this.value - I;
-        const G = Math.trunc(F * D); // 123.456789 * 1000 = 123.456 => '123.456'
-        return `${I}.${G}`; // FixedFloat([123.45678, 2]).toTrunc(): 123.45
-    }
-    */
     toRounded(fig, R) {
         fig = fig ?? this._.fig;
         R = R ?? this._.roundedMethodName;
