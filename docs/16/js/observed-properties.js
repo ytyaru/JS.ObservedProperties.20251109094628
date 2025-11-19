@@ -63,6 +63,7 @@ class VarAssignable {// 変数への代入可能性。型を定義するのに�
 class QuantityArgs {
     static get #NAMES() {return 'value naned infinited unsafed unsigned min max'.split(' '); }
     static get #defaultOptions() { return {
+//        value: undefined,
         value: 0,
         naned: false,
         infinited: false,
@@ -122,6 +123,9 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
         const o = Quantity.validate(...args);
         super(o.value);
         this._ = o;
+//        this._.value = o.value ?? 0===args.length ? 0 : args[0];
+        if (undefined===this._.value) {this._.value = o.value ?? ((0===args.length || undefined===args[0]) ? 0 : args[0])}
+        console.log(this._.value, o.value, args, (0===args.length || undefined===args[0]), args[0])
     }
     validate(v) {return Quantity.validate(v ?? this.valueOf(), this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max);}
     valueOf() {return this.value}
@@ -138,19 +142,30 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
     get max() {return this._.max}
 }
 class AllFinite extends Quantity {// 有限数(非NaN,非Infinity)
+//    constructor(...args) {super(...args)}
+//    constructor(...args) {super(Quantity.validate(value, false, false, unsafed, unsigned, min, max))}
     constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         super(value, false, false, unsafed, unsigned, min, max);
     }
+/*
+*/
 }
 class UnsafedFinite extends AllFinite {// 危険(Number.M(IN|AX)_SAFE_INTEGER範囲外を許容する)な有限数(非NaN,非Infinity)
+//    constructor(...args) {super(...args)}
+//    constructor(...args) {super(Quantity.validate(value, false, false, true, unsigned, min, max))}
     constructor(value, unsigned=false, min=undefined, max=undefined) {
         super(value, true, unsigned, min, max);
     }
+    /*
+    */
 }
 class Finite extends AllFinite {// 安全(Number.M(IN|AX)_SAFE_INTEGER範囲内)な有限数(非NaN,非Infinity)
+//    constructor(...args) {super(Quantity.validate(value, false, false, false, unsigned, min, max))}
     constructor(value, unsigned=false, min=undefined, max=undefined) {
         super(value, false, unsigned, min, max);
     }
+    /*
+    */
 }
 class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infinityを除き安全な有限数のみ。
     static validate(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
@@ -172,6 +187,7 @@ class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infin
         return R.every(r=>r);
     }
     static eq(...args) {return this.nearlyEqual(...args)}
+//    constructor(value, unsigned=false, min=undefined, max=undefined) {super(Quantity.validate(value, false, false, false, unsigned, min, max))}
     //constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
         //super(value, false, false, unsafed, unsigned, min, max);
     constructor(value, unsigned=false, min=undefined, max=undefined) {
@@ -1349,6 +1365,7 @@ console.assert(3.14===MATH.PI);
         Quantity: Quantity,
         Quant: Quantity,
         Q: Quantity,
+        AllFinite: AllFinite,
         UnsafedFinite: UnsafedFinite,
         Finite: Finite,
         F: Float,
@@ -1373,6 +1390,8 @@ console.assert(3.14===MATH.PI);
         quantity:(...args)=>new Quantity(...args), // Number型を最も自由に制限できる型(naned,infinited,unsafed,unsigned,bit,min,max)
         quant:(...args)=>new Quantity(...args),
         q:(...args)=>new Quantity(...args),
+        allFinite:(...args)=>new AllFinite(...args),
+        aFin:(...args)=>new AllFinite(...args),
         unsafedFinite:(...args)=>new UnsafedFinite(...args),
         unFin:(...args)=>new UnsafedFinite(...args),
         finite:(...args)=>new Finite(...args),

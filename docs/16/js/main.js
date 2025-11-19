@@ -96,8 +96,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
     console.log(Math.round(-0.5), Math.round(-1.5)); // 0, -1
 
     // NumberDecimal
-    Obs.T.nDec(2); // 桁数を設定する。初期値は0。
-    Obs.T.nDec(2,[123,45]); // 桁数を設定する。初期値は0。
+//    Obs.T.nDec(2); // 桁数を設定する。初期値は0。
+//    Obs.T.nDec(2,[123,45]); // 桁数を設定する。初期値は0。
 
     a.t(()=>{
         const q = Obs.T.q();
@@ -248,6 +248,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
 */
+    // AllFinite
+    a.t(()=>{
+        const f = Obs.T.aFin();
+        return f instanceof Obs.C.AllFinite && 0===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
 
     // options引数
     a.t(()=>{
