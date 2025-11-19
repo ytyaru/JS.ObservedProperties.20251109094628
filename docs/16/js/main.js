@@ -113,9 +113,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const q = Obs.T.q(123, true);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
+    //a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q(123, true, true));
     a.t(()=>{
-        const q = Obs.T.q(123, true, true);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited && !q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
+        const q = Obs.T.q(123, true, true);// 論理矛盾です。infinited=trueなのにunsafed=falseです。unsafed=trueに強制します。
+        console.log(q.min, q.max);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
     });
     a.t(()=>{
         const q = Obs.T.q(123, true, false, true);
@@ -151,10 +153,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const q = Obs.T.q(123, true, true, true, false, undefined, 8);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && 8===q.max;
     });
+    a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q(123, true, true, false, false, undefined, 8));
+    /*
     a.t(()=>{
         const q = Obs.T.q(123, true, true, false, false, undefined, 8);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited && !q.unsafed && !q.unsigned && -Infinity===q.min && 8===q.max;
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && 8===q.max;
     });
+    */
     a.t(()=>{
         const q = Obs.T.q(123, true, false, false, false, undefined, 8);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && 8===q.max;
@@ -172,10 +177,13 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const q = Obs.T.q(123, true, true, true, false, 2, undefined);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && 2===q.min && Infinity===q.max;
     });
+    a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q(123, true, true, false, false, 2, undefined));
+    /*
     a.t(()=>{
         const q = Obs.T.q(123, true, true, false, false, 2, undefined);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited && !q.unsafed && !q.unsigned && 2===q.min && Infinity===q.max;
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && 2===q.min && Infinity===q.max;
     });
+    */
     a.t(()=>{
         const q = Obs.T.q(123, true, false, false, false, 2, undefined);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && 2===q.min && Number.MAX_SAFE_INTEGER===q.max;
@@ -198,10 +206,17 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `infinited=falseなのにvalue=-Infinityです。`, ()=>Obs.T.q({unsafed:true, min:-Infinity}));
     a.e(TypeError, `infinited=falseなのにvalue=Infinityです。`, ()=>Obs.T.q({unsafed:true, value:Infinity}));
     a.e(TypeError, `infinited=falseなのにvalue=-Infinityです。`, ()=>Obs.T.q({unsafed:true, value:-Infinity}));
-    a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, max:Infinity}));
-    a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, min:-Infinity}));
-    a.e(RangeError, `valueはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, value:Infinity}));
-    a.e(RangeError, `valueはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, value:-Infinity}));
+    //a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q(123, true, true, false, false, 2, undefined));
+//    a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, max:Infinity}));
+//    a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, min:-Infinity}));
+//    a.e(RangeError, `valueはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, value:Infinity}));
+//    a.e(RangeError, `valueはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, value:-Infinity}));
+
+//    a.e(RangeError, `maxはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, max:Infinity+1}));
+//    a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, min:-Infinity-1}));
+//    a.e(RangeError, `valueはunsigned,bitで設定した範囲より大きいです。範囲内に指定してください。:expected:9007199254740991, actual:Infinity`, ()=>Obs.T.q({infinited:true, value:Infinity+1}));
+//    a.e(RangeError, `valueはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:-9007199254740991, actual:-Infinity`, ()=>Obs.T.q({infinited:true, value:-Infinity-1}));
+
     /*
     a.t(()=>{
         // Infinity は 範囲 Number.MAX_SAFE_INTEGER を超過しているため論理エラーにすべき
@@ -211,9 +226,22 @@ window.addEventListener('DOMContentLoaded', (event) => {
     */
 
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({unsafed:false, value:Number.MAX_SAFE_INTEGER+1}));
-    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MAX_SAFE_INTEGER+1}));
+//    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({infinited:true, value:Number.MAX_SAFE_INTEGER+1}));
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
-    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
+//    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.q({infinited:true, value:Number.MIN_SAFE_INTEGER-1}));
+    a.t(()=>{
+        const q = Obs.T.q({infinited:true, value:Number.MAX_SAFE_INTEGER+1});
+        return q instanceof Obs.C.Quantity && Number.MAX_SAFE_INTEGER+1===q.value && !q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q({infinited:true, value:Number.MIN_SAFE_INTEGER-1});
+        return q instanceof Obs.C.Quantity && Number.MIN_SAFE_INTEGER-1===q.value && !q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
+    });
+    a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MAX_SAFE_INTEGER+1}));
+    a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MAX_SAFE_INTEGER+1}));
+    a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
+    a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
+
 /*
     a.t(()=>{
         const q = Obs.T.q({infinited:true, unsafed:false, value:Number.MAX_SAFE_INTEGER+1});
@@ -235,8 +263,8 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return q instanceof Obs.C.Quantity && 0===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
     a.t(()=>{
-        const q = Obs.T.q({infinited:true});
-        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned &&  q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+        const q = Obs.T.q({infinited:true});// infinited=trueでunsafed=undefinedのためunsafed=trueに強制します。
+        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && Infinity===q.max;
     });
     a.t(()=>{
         const q = Obs.T.q({unsafed:true});

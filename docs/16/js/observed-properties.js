@@ -66,7 +66,8 @@ class QuantityArgs {
         value: 0,
         naned: false,
         infinited: false,
-        unsafed: false,
+        //unsafed: false,
+        unsafed: undefined,
         unsigned: false,
         min: undefined,
         max: undefined,
@@ -92,8 +93,14 @@ class QuantityArgs {
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
         const o = QuantityArgs.argsPattern(...args);
-        //if (o.infinited && !o.unsafed) {console.warn(`論理矛盾です。infinited=trueなのにunsafed=falseです。unsafed=trueに強制`); o.unsafed=true;}
-        if (o.infinited && !o.unsafed) {throw new TypeError(`論理矛盾です。infinited=trueなのにunsafed=falseです。unsafed=trueにすべきです。`);}
+        if (o.infinited) {
+            //if (undefined===o.unsafed) {console.warn(`infinited=trueでunsafed=undefinedのためunsafed=trueに強制します。`); o.unsafed=true;}
+            if ('boolean'!==typeof o.unsafed) {console.warn(`infinited=trueでunsafedが未設定か非booleanのためunsafed=trueに強制します。`); o.unsafed=true;}
+            else if (false===o.unsafed) {throw new TypeError(`論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`);}
+        } else {o.unsafed = o.unsafed ?? false;}
+        //if (o.infinited && undefined===o.unsafed) {console.warn(`infinited=trueでunsafed=undefinedのためunsafed=trueに強制します。`); o.unsafed=true;}
+        //if (o.infinited && !o.unsafed) {console.warn(`論理矛盾です。infinited=trueなのにunsafed=falseです。unsafed=trueに強制します。`); o.unsafed=true;}
+//        if (o.infinited && !o.unsafed) {throw new TypeError(`論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`);}
         isBool(o.naned, 'naned');
         isBool(o.infinited, 'infinited');
         isBool(o.unsafed, 'unsafed');
