@@ -67,10 +67,10 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.t(-1===Obs.U.NumberRounder.round(-0.5, 0)); // -0.5 を 小数点0桁で丸めて四捨五入すると -1
     a.t(-2===Obs.U.NumberRounder.round(-1.5, 0)); // -1.5 を 小数点0桁で丸めて四捨五入すると -2
 
-    a.t( 0===Obs.U.NumberRounder.halfEven(0.5, 0));  //  0.5 を 小数点0桁で丸めて最近接偶数丸めすると  0
-    a.t( 2===Obs.U.NumberRounder.halfEven(1.5, 0));  //  1.5 を 小数点0桁で丸めて最近接偶数丸めすると  2
-    a.t( 0===Obs.U.NumberRounder.halfEven(-0.5, 0)); // -0.5 を 小数点0桁で丸めて最近接偶数丸めすると  0
-    a.t(-2===Obs.U.NumberRounder.halfEven(-1.5, 0)); // -1.5 を 小数点0桁で丸めて最近接偶数丸めすると -2
+    a.t( 0===Obs.U.NumberRounder.halfEven(0.5, 0));  //  0.5 を 小数点0桁で最近接偶数丸めすると  0
+    a.t( 2===Obs.U.NumberRounder.halfEven(1.5, 0));  //  1.5 を 小数点0桁で最近接偶数丸めすると  2
+    a.t( 0===Obs.U.NumberRounder.halfEven(-0.5, 0)); // -0.5 を 小数点0桁で最近接偶数丸めすると  0
+    a.t(-2===Obs.U.NumberRounder.halfEven(-1.5, 0)); // -1.5 を 小数点0桁で最近接偶数丸めすると -2
 
     // 5 でないなら通常通り切り捨て／切り上げのいずれか
     a.t( 0===Obs.U.NumberRounder.round( 0.4, 0)); //  0.4 を 小数点0桁で丸めて四捨五入すると  0
@@ -78,20 +78,20 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.t( 0===Obs.U.NumberRounder.round(-0.4, 0)); // -0.4 を 小数点0桁で丸めて四捨五入すると  0
     a.t(-1===Obs.U.NumberRounder.round(-1.4, 0)); // -1.4 を 小数点0桁で丸めて四捨五入すると -1
 
-    a.t( 0===Obs.U.NumberRounder.halfEven( 0.4, 0)); //  0.4 を 小数点0桁で丸めて四捨五入すると  0
-    a.t( 1===Obs.U.NumberRounder.halfEven( 1.4, 0)); //  1.4 を 小数点0桁で丸めて四捨五入すると  1
-    a.t( 0===Obs.U.NumberRounder.halfEven(-0.4, 0)); // -0.4 を 小数点0桁で丸めて四捨五入すると  0
-    a.t(-1===Obs.U.NumberRounder.halfEven(-1.4, 0)); // -1.4 を 小数点0桁で丸めて四捨五入すると -1
+    a.t( 0===Obs.U.NumberRounder.halfEven( 0.4, 0)); //  0.4 を 小数点0桁で最近接偶数丸めすると  0
+    a.t( 1===Obs.U.NumberRounder.halfEven( 1.4, 0)); //  1.4 を 小数点0桁で最近接偶数丸めすると  1
+    a.t( 0===Obs.U.NumberRounder.halfEven(-0.4, 0)); // -0.4 を 小数点0桁で最近接偶数丸めすると  0
+    a.t(-1===Obs.U.NumberRounder.halfEven(-1.4, 0)); // -1.4 を 小数点0桁で最近接偶数丸めすると -1
 
     a.t( 1===Obs.U.NumberRounder.round( 0.6, 0)); //  0.6 を 小数点0桁で丸めて四捨五入すると  1
     a.t( 2===Obs.U.NumberRounder.round( 1.6, 0)); //  1.6 を 小数点0桁で丸めて四捨五入すると  2
     a.t(-1===Obs.U.NumberRounder.round(-0.6, 0)); // -0.6 を 小数点0桁で丸めて四捨五入すると -1
     a.t(-2===Obs.U.NumberRounder.round(-1.6, 0)); // -1.6 を 小数点0桁で丸めて四捨五入すると -2
 
-    a.t( 1===Obs.U.NumberRounder.halfEven( 0.6, 0)); //  0.6 を 小数点0桁で丸めて四捨五入すると  1
-    a.t( 2===Obs.U.NumberRounder.halfEven( 1.6, 0)); //  1.6 を 小数点0桁で丸めて四捨五入すると  2
-    a.t(-1===Obs.U.NumberRounder.halfEven(-0.6, 0)); // -0.6 を 小数点0桁で丸めて四捨五入すると -1
-    a.t(-2===Obs.U.NumberRounder.halfEven(-1.6, 0)); // -1.6 を 小数点0桁で丸めて四捨五入すると -2
+    a.t( 1===Obs.U.NumberRounder.halfEven( 0.6, 0)); //  0.6 を 小数点0桁で最近接偶数丸めすると  1
+    a.t( 2===Obs.U.NumberRounder.halfEven( 1.6, 0)); //  1.6 を 小数点0桁で最近接偶数丸めすると  2
+    a.t(-1===Obs.U.NumberRounder.halfEven(-0.6, 0)); // -0.6 を 小数点0桁で最近接偶数丸めすると -1
+    a.t(-2===Obs.U.NumberRounder.halfEven(-1.6, 0)); // -1.6 を 小数点0桁で最近接偶数丸めすると -2
 
     console.log(Math.round(-0.5), Math.round(-1.5)); // 0, -1
 
@@ -136,22 +136,31 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const q = Obs.T.q(123, true, true, true, true);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 0===q.min && Infinity===q.max;
     });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:1, min:2, max:8`, ()=>Obs.T.q(1, true, true, true, true, 2, 8));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:9, min:2, max:8`, ()=>Obs.T.q(9, true, true, true, true, 2, 8));
     a.t(()=>{
-        const q = Obs.T.q(123, true, true, true, true, 2, 8);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 2===q.min && 8===q.max;
+        const q = Obs.T.q(123, true, true, true, true, 123, 124);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 123===q.min && 124===q.max;
     });
     a.t(()=>{
         const q = Obs.T.q(123, true, true, true, true, 2);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 2===q.min && Infinity===q.max;
     });
     // min が取りうる論理値による各種上限値パターン
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:123, min:0, max:8`, ()=>Obs.T.q(123, true, true, true, true, undefined, 8));
+    /*
     a.t(()=>{
         const q = Obs.T.q(123, true, true, true, true, undefined, 8);
         return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 0===q.min && 8===q.max;
     });
+    */
     a.t(()=>{
-        const q = Obs.T.q(123, true, true, true, false, undefined, 8);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && 8===q.max;
+        const q = Obs.T.q(123, true, true, true, true, 123, 124);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed &&  q.unsigned && 123===q.min && 124===q.max;
+    });
+    a.t(()=>{
+        const q = Obs.T.q(123, true, true, true, false, undefined, 124);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned &&  q.infinited &&  q.unsafed && !q.unsigned && -Infinity===q.min && 124===q.max;
     });
     a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q(123, true, true, false, false, undefined, 8));
     /*
@@ -161,12 +170,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
     });
     */
     a.t(()=>{
-        const q = Obs.T.q(123, true, false, false, false, undefined, 8);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && 8===q.max;
+        const q = Obs.T.q(123, true, false, false, false, undefined, 124);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && 124===q.max;
     });
     a.t(()=>{//
-        const q = Obs.T.q(123, true, false, true, false, undefined, 8);
-        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited &&  q.unsafed && !q.unsigned && -Number.MAX_VALUE===q.min && 8===q.max;
+        const q = Obs.T.q(123, true, false, true, false, undefined, 124);
+        return q instanceof Obs.C.Quantity && 123===q.value &&  q.naned && !q.infinited &&  q.unsafed && !q.unsigned && -Number.MAX_VALUE===q.min && 124===q.max;
     });
     // max が取りうる論理値による各種上限値パターン
     a.t(()=>{
@@ -242,6 +251,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
     a.e(TypeError, `論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`, ()=>Obs.T.q({infinited:true, unsafed:false, value:Number.MIN_SAFE_INTEGER-1}));
 
+    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.q(NaN));
+    a.t(()=>{
+        const q = Obs.T.q(NaN, true);
+        return q instanceof Obs.C.Quantity && Number.isNaN(q.value) &&  q.naned && !q.infinited && !q.unsafed && !q.unsigned && Number.MIN_SAFE_INTEGER===q.min && Number.MAX_SAFE_INTEGER===q.max;
+    });
 /*
     a.t(()=>{
         const q = Obs.T.q({infinited:true, unsafed:false, value:Number.MAX_SAFE_INTEGER+1});
@@ -253,6 +267,40 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const f = Obs.T.aFin();
         return f instanceof Obs.C.AllFinite && 0===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
     });
+    a.t(()=>{
+        const f = Obs.T.aFin(123);
+        return f instanceof Obs.C.AllFinite && 123===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.aFin(123, {value:234});
+        console.log(f.value)
+        return f instanceof Obs.C.AllFinite && 234===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.aFin({value:234});
+        console.log(f instanceof Obs.C.AllFinite, 234===f.value, !f.naned, !f.infinited, !f.unsafed, !f.unsigned, Number.MIN_SAFE_INTEGER===f.min, Number.MAX_SAFE_INTEGER===f.max);
+        console.log(f.value);
+        return f instanceof Obs.C.AllFinite && 234===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.aFin(NaN, true)); // trueはunsigned
+    a.e(TypeError, `nanedはtrueにできません。`, ()=>Obs.T.aFin(NaN, {naned:true}));
+    a.e(TypeError, `infinitedはtrueにできません。`, ()=>Obs.T.aFin(Infinity, {infinited:true}));
+//    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.aFin(NaN, {naned:true}));
+    a.t(()=>{
+        const f = Obs.T.aFin(-123, {unsafed:true});
+        return f instanceof Obs.C.AllFinite && -123===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.aFin(123, {unsigned:true});
+        return f instanceof Obs.C.AllFinite && 123===f.value && !f.naned && !f.infinited && !f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+
+
+    //a.e(RangeError, `valueはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:0, actual:-1`, ()=>Obs.T.aFin(-1, {unsigned:true}));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.aFin(-1, {unsigned:true}));
+
+
+
 
     // options引数
     a.t(()=>{
@@ -279,9 +327,11 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const q = Obs.T.q({unsigned:true});
         return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed &&  q.unsigned && 0===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:0, min:123, max:9007199254740991`, ()=>Obs.T.q({min:123}));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:0, min:-9007199254740991, max:-1`, ()=>Obs.T.q({max:-1}));
     a.t(()=>{
-        const q = Obs.T.q({min:123});
-        return q instanceof Obs.C.Quantity && 0===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && 123===q.min && Number.MAX_SAFE_INTEGER===q.max;
+        const q = Obs.T.q(123, {min:123});
+        return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && 123===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
     a.t(()=>{
         const q = Obs.T.q({max:123});
@@ -314,8 +364,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return q instanceof Obs.C.Quantity && 123===q.value && !q.naned && !q.infinited && !q.unsafed && !q.unsigned && 2===q.min && Number.MAX_SAFE_INTEGER===q.max;
     });
     a.e(RangeError, `minはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:0, actual:-1`, ()=>Obs.T.q(123, {unsigned:true, min:-1}));
-//    Math.halfEven
-    
 
     a.t(()=>{
         /*

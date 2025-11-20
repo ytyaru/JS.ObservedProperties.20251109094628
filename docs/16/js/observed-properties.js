@@ -117,6 +117,7 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
         if (undefined===o.min) {o.min=MIN}
         if (undefined===o.max) {o.max=MAX}
         validMinMax(o.min, o.max);
+        if (!Number.isNaN(o.value) && (o.value < o.min || o.max < o.value)) {throw new RangeError(`valueがmin〜maxの範囲を超過しています。:value:${o.value}, min:${o.min}, max:${o.max}`)}
         return o;
     }
     constructor(...args) {//value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
@@ -144,8 +145,79 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
 class AllFinite extends Quantity {// 有限数(非NaN,非Infinity)
 //    constructor(...args) {super(...args)}
 //    constructor(...args) {super(Quantity.validate(value, false, false, unsafed, unsigned, min, max))}
-    constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
-        super(value, false, false, unsafed, unsigned, min, max);
+    constructor(...args) {// value, unsafed, unsigned, min, max    naned=false, infinited=falseな型である
+        const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
+        if (o.naned) {throw new TypeError(`nanedはtrueにできません。`)}
+        if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。`)}
+        console.log(args);
+        const d = {
+            //value: 0<args.length && !isObj(args[0]) ? args[0] : (0<args.length && isObj(args[0]) && 'value' in args[0] ? args[0].value : 0),
+            value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: 1<args.length && !isObj(args[1]) ? args[1] : undefined,
+            unsigned: 2<args.length ? args[2] : false,
+            min: 3<args.length ? args[3] : undefined,
+            max: 4<args.length ? args[4] : undefined,
+        };
+        //const p = (0 < [...Object.keys(o)].length) ? ({...o, ...d}) : d;
+        const p = (0 < [...Object.keys(o)].length) ? ({...d, ...o}) : d;
+        super(p);
+    /*
+        const o = {...((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({}))), ...{;
+            value: 0<args.length ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: 1<args.length ? args[1] : undefined,
+            unsigned: 2<args.length ? args[2] : false,
+            min: 3<args.length ? args[3] : undefined,
+            max: 4<args.length ? args[4] : undefined,
+        };
+        if (o.)
+    */
+        /*
+        super((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({
+            value: 0<args.length ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: 1<args.length ? args[1] : undefined,
+            unsigned: 2<args.length ? args[2] : false,
+            min: 3<args.length ? args[3] : undefined,
+            max: 4<args.length ? args[4] : undefined,
+        })));
+        */
+        /*
+        const o = (1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({
+            value: 0<args.length ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: 1<args.length ? args[1] : undefined,
+            unsigned: 2<args.length ? args[2] : false,
+            min: 3<args.length ? args[3] : undefined,
+            max: 4<args.length ? args[4] : undefined,
+        }));
+        if 
+        const o0 = {
+            value: 0<args.length ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: 1<args.length ? args[1] : undefined,
+            unsigned: 2<args.length ? args[2] : false,
+            min: 3<args.length ? args[3] : undefined,
+            max: 4<args.length ? args[4] : undefined,
+        };
+        const o1 = (1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : null);
+        const o2 = o1 ? ({...o0, ...o1}) : o0;
+        super(o2);
+//    constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
+//        super(Quantity.validate({value:0, naned:false, infinited:false, unsafed:undefined, unsigned:false, min:undefined, max:undefined}));
+//        super({value:0, naned:false, infinited:false, unsafed:undefined, unsigned:false, min:undefined, max:undefined, ...Quantity.validate(...args)});
+//        super({value:0, naned:false, infinited:false, unsafed:undefined, unsigned:false, min:undefined, max:undefined, ...Quantity.validate(...args)});
+//        super({value:0, naned:false, infinited:false, unsafed:unsafed, unsigned:unsigned, min:min, max:max, ...Quantity.validate(...args)});
+//        const o = {value:value, naned:false, infinited:false, unsafed:unsafed, unsigned:unsigned, min:min, max:max, ...Quantity.validate(...args)}; 
+        //super(value, false, false, unsafed, unsigned, min, max);
+//        super({value:value, naned:false, infinited:false, unsafed:unsafed, unsigned:unsigned, min:min, max:max});
+        */
     }
 /*
 */
