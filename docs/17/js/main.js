@@ -327,6 +327,91 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return f instanceof Obs.C.UnsafedFinite && 123===f.value && !f.naned && !f.infinited &&  f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_VALUE===f.max;
     });
     a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.unFin(-1, {unsigned:true}));
+    
+    // Finite
+    a.t(()=>{
+        const f = Obs.T.fin();
+        return f instanceof Obs.C.Finite && 0===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.fin(123);
+        return f instanceof Obs.C.Finite && 123===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.fin(123, {value:234});
+        return f instanceof Obs.C.Finite && 234===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.fin({value:234});
+        return f instanceof Obs.C.Finite && 234===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.fin(NaN, true)); // trueはunsigned
+    a.e(TypeError, `nanedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.fin(NaN, {naned:true}));
+    a.e(TypeError, `infinitedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.fin(Infinity, {infinited:true}));
+//    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.fin(NaN, {naned:true}));
+    a.e(TypeError, `unsafedはtrueにできません。Quantity/AllFinite/UnsafedFinite型で再試行してください。`, ()=>Obs.T.fin(-123, {unsafed:true}));
+    /*
+    a.t(()=>{
+        const f = Obs.T.fin(-123, {unsafed:true});
+        return f instanceof Obs.C.Finite && -123===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.fin(123, {unsigned:true});
+        return f instanceof Obs.C.Finite && 123===f.value && !f.naned && !f.infinited &&  f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.fin(-1, {unsigned:true}));
+    */
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.fin(-1, {unsigned:true}));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.fin(Number.MIN_SAFE_INTEGER-1));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.fin(Number.MAX_SAFE_INTEGER+1));
+    
+    // AllFloat
+    a.t(()=>{
+        const f = Obs.T.float();
+        console.log(
+        f instanceof Obs.C.AllFloat,
+        0===f.value,
+        !f.naned,
+        !f.infinited,
+        !f.unsafed,
+        !f.unsigned,
+        Number.MIN_SAFE_INTEGER===f.min,
+        Number.MAX_SAFE_INTEGER===f.max);
+        console.log(f.value)
+        return f instanceof Obs.C.AllFloat && 0===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.float(123);
+        return f instanceof Obs.C.AllFloat && 123===f.value && !f.naned && !f.inAllFloatd && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.float(123, {value:234});
+        return f instanceof Obs.C.AllFloat && 234===f.value && !f.naned && !f.inAllFloatd && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.float({value:234});
+        return f instanceof Obs.C.AllFloat && 234===f.value && !f.naned && !f.inAllFloatd && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
+    });
+    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.float(NaN, true)); // trueはunsigned
+    a.e(TypeError, `nanedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.float(NaN, {naned:true}));
+    a.e(TypeError, `inAllFloatdはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.float(Infinity, {inAllFloatd:true}));
+//    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.float(NaN, {naned:true}));
+    a.e(TypeError, `unsafedはtrueにできません。Quantity/AllAllFloat/UnsafedAllFloat型で再試行してください。`, ()=>Obs.T.float(-123, {unsafed:true}));
+    /*
+    a.t(()=>{
+        const f = Obs.T.float(-123, {unsafed:true});
+        return f instanceof Obs.C.AllFloat && -123===f.value && !f.naned && !f.inAllFloatd &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.float(123, {unsigned:true});
+        return f instanceof Obs.C.AllFloat && 123===f.value && !f.naned && !f.inAllFloatd &&  f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.float(-1, {unsigned:true}));
+    */
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.float(-1, {unsigned:true}));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.float(Number.MIN_SAFE_INTEGER-1));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.float(Number.MAX_SAFE_INTEGER+1));
+
 
     // options引数
     a.t(()=>{

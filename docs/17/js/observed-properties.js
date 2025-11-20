@@ -64,8 +64,10 @@ class QuantityArgs {
         max: undefined,
     } }
     static argsPattern(...args) {
+        console.log(args.length, args, isObj(args[0]), args[0]);
         if (0===args.length) { return this.#defaultOptions }
-        else if (1===args.length) { return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
+        //else if (1===args.length) { return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
+        else if (1===args.length) { console.log((isObj(args[0]) ? args[0] : ({value:args[0]}))); return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
         else if (2===args.length) {
             if (isObj(args[1])) {return {...this.#defaultOptions, ...args[1], value:args[0]} }
             else {return {...this.#defaultOptions, value:args[0], naned:args[1]} }
@@ -79,6 +81,7 @@ class QuantityArgs {
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
         const o = QuantityArgs.argsPattern(...args);
+        console.log(o);
         if (o.infinited) {
             if ('boolean'!==typeof o.unsafed) {console.warn(`infinited=trueでunsafedが未設定か非booleanのためunsafed=trueに強制します。`); o.unsafed=true;}
             else if (false===o.unsafed) {throw new TypeError(`論理矛盾です。infinited=trueなのにunsafed=falseです。infinitedとunsafedはそれ以外の組合せT/F,F/T,F/Fのいずれかにすべきです。`);}
@@ -131,7 +134,9 @@ class AllFinite extends Quantity {// 有限数(非NaN,非Infinity)
         const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
         if (o.naned) {throw new TypeError(`nanedはtrueにできません。Quantity型で再試行してください。`)}
         if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。Quantity型で再試行してください。`)}
+        console.log(o);
         console.log(args);
+        console.log((0 < [...Object.keys(o)].length));
         const d = {
             value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
             naned: false,
@@ -142,6 +147,9 @@ class AllFinite extends Quantity {// 有限数(非NaN,非Infinity)
             max: 4<args.length ? args[4] : undefined,
         };
         const p = (0 < [...Object.keys(o)].length) ? ({...d, ...o}) : d;
+        console.log(d);
+        console.log(o);
+        console.log(p);
         super(p);
     }
 }
@@ -174,11 +182,28 @@ class UnsafedFinite extends AllFinite {// 危険(Number.M(IN|AX)_SAFE_INTEGER範
 }
 class Finite extends AllFinite {// 安全(Number.M(IN|AX)_SAFE_INTEGER範囲内)な有限数(非NaN,非Infinity)
 //    constructor(...args) {super(Quantity.validate(value, false, false, false, unsigned, min, max))}
-    constructor(value, unsigned=false, min=undefined, max=undefined) {
-        super(value, false, unsigned, min, max);
+//    constructor(value, unsigned=false, min=undefined, max=undefined) {
+//        super(value, false, unsigned, min, max);
+//    }
+    constructor(...args) {
+        const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
+        if (o.naned) {throw new TypeError(`nanedはtrueにできません。Quantity型で再試行してください。`)}
+        if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。Quantity型で再試行してください。`)}
+        if (true===o.unsafed) {throw new TypeError(`unsafedはtrueにできません。Quantity/AllFinite/UnsafedFinite型で再試行してください。`)}
+        console.log(args);
+        const d = {
+            value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: false,
+            unsigned: 1<args.length && !isObj(args[1]) ? args[1] : false,
+            min: 2<args.length ? args[2] : undefined,
+            max: 3<args.length ? args[3] : undefined,
+        };
+        const p = (0 < [...Object.keys(o)].length) ? ({...d, ...o}) : d;
+        console.log(p);
+        super(p);
     }
-    /*
-    */
 }
 class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infinityを除き安全な有限数のみ。
     static validate(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
@@ -200,12 +225,31 @@ class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infin
         return R.every(r=>r);
     }
     static eq(...args) {return this.nearlyEqual(...args)}
-//    constructor(value, unsigned=false, min=undefined, max=undefined) {super(Quantity.validate(value, false, false, false, unsigned, min, max))}
-    //constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
-        //super(value, false, false, unsafed, unsigned, min, max);
-    constructor(value, unsigned=false, min=undefined, max=undefined) {
-        super(value, unsigned, min, max);
+//    constructor(value, unsigned=false, min=undefined, max=undefined) {
+//        super(value, unsigned, min, max);
+//    }
+    constructor(...args) {super(...args)}
+    /*
+    constructor(...args) {
+        const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
+        if (o.naned) {throw new TypeError(`nanedはtrueにできません。Quantity型で再試行してください。`)}
+        if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。Quantity型で再試行してください。`)}
+        if (true===o.unsafed) {throw new TypeError(`unsafedはtrueにできません。Quantity/AllFinite/UnsafedFinite型で再試行してください。`)}
+        console.log(args, 0<args.length && !isObj(args[0]));
+        const d = {
+            value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: false,
+            unsigned: 1<args.length && !isObj(args[1]) ? args[1] : false,
+            min: 2<args.length ? args[2] : undefined,
+            max: 3<args.length ? args[3] : undefined,
+        };
+        const p = (0 < [...Object.keys(o)].length) ? ({...d, ...o}) : d;
+        console.log(p);
+        super(p);
     }
+    */
     validate(v) {return Float.validate(v ?? this.value, this._.unsafed, this._.unsigned, this._.min, this._.max);}
     nearlyEqual(...args) { return Float.nearlyEqual([this.value, ...args]); }// 等号===の代替。JSのNumber型は64bit浮動少数点数であり比較等号===では完全一致確認できない（console.assert(0.3===0.1+0.2）でエラーになる）これをいくらか解決する。但し15桁の少数まで。console.assert(nearlyEqual(0.3, 0.1+0.2))でエラーにならない。
     eq(...args) {return this.nearlyEqual(...args)}
@@ -1381,9 +1425,10 @@ console.assert(3.14===MATH.PI);
         AllFinite: AllFinite,
         UnsafedFinite: UnsafedFinite,
         Finite: Finite,
-        F: Float,
-        Flt: Float,
+        AllFloat: AllFloat,
         Float: Float,
+        Flt: Float,
+        F: Float,
         RoundableFloat: RoundableFloat,
         RounderFloat: RounderFloat,
         RoundFloat: RoundFloat,
