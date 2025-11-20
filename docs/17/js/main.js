@@ -294,13 +294,39 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const f = Obs.T.aFin(123, {unsigned:true});
         return f instanceof Obs.C.AllFinite && 123===f.value && !f.naned && !f.infinited && !f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_SAFE_INTEGER===f.max;
     });
-
-
     //a.e(RangeError, `valueはunsigned,bitで設定した範囲より小さいです。範囲内に指定してください。:expected:0, actual:-1`, ()=>Obs.T.aFin(-1, {unsigned:true}));
     a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.aFin(-1, {unsigned:true}));
-
-
-
+    
+    // UnsafedFinite
+    a.t(()=>{
+        const f = Obs.T.unFin();
+        return f instanceof Obs.C.UnsafedFinite && 0===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.unFin(123);
+        return f instanceof Obs.C.UnsafedFinite && 123===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.unFin(123, {value:234});
+        return f instanceof Obs.C.UnsafedFinite && 234===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.unFin({value:234});
+        return f instanceof Obs.C.UnsafedFinite && 234===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.unFin(NaN, true)); // trueはunsigned
+    a.e(TypeError, `nanedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.unFin(NaN, {naned:true}));
+    a.e(TypeError, `infinitedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.unFin(Infinity, {infinited:true}));
+//    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.unFin(NaN, {naned:true}));
+    a.t(()=>{
+        const f = Obs.T.unFin(-123, {unsafed:true});
+        return f instanceof Obs.C.UnsafedFinite && -123===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.t(()=>{
+        const f = Obs.T.unFin(123, {unsigned:true});
+        return f instanceof Obs.C.UnsafedFinite && 123===f.value && !f.naned && !f.infinited &&  f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_VALUE===f.max;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.unFin(-1, {unsigned:true}));
 
     // options引数
     a.t(()=>{

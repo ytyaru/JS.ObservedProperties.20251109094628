@@ -12,7 +12,6 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
     isInt = (v,n)=>{if (!isNum(v) || !Number.isInteger(v)) {throw getFIError(v,n,true)} return true;},
     isBool = (v,n)=>{if ('boolean'!==typeof v) {throw new TypeError(`${n}は真偽値であるべきです。:${v}`)}}
     validRange = (infinited, expected, actual, name)=>{
-    //validRange = (expected, actual, name)=>{
         console.log('validRange', expected, actual, name);
         if (Number.isNaN(actual)) {throw new TypeError(`min/maxにNaNは設定できません。`)}
         if ([Infinity,-Infinity].some(v=>v===actual) && !infinited) {throw new TypeError(`infinited=falseなのにvalue=${actual}です。`)}
@@ -25,19 +24,12 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
                             infinited ? Infinity : (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER)];
         return [(min && MIN<=min ? min : MIN), (max && min<=MAX ? max : MAX)];
     },
-    /*
-    getNumRange = (unsafed, unsigned, min, max)=>{
-        const [MIN, MAX] = [(unsigned ? 0 : (unsafed ? -Number.MAX_VALUE : Number.MIN_SAFE_INTEGER)),
-                            (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER)];
-        return [(min && MIN<=min ? min : MIN), (max && min<=MAX ? max : MAX)];
-    },
-    */
     getIntRange = (unsafed, unsigned, bit, min, max)=>[(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
     validMinMax = (min, max)=>{if(max <= min){throw new RangeError(`minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:${min},${max}`)}},
     isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v),
     isNu = (v)=>[null,undefined].some(V=>V===v),
     isNun = (v)=>[null,undefined].some(V=>V===v) || Number.isNaN(v),
-    // プリミティブ値か(undefined,null,NaN,-+Infinityを除く。数値,文字列,論理値,配列,オブジェクト,BigInt,正規表現(/[a-z]/等の表現があるが実際はRegExpインスタンス故除外))
+    // プリミティブ値か(undefined,null,NaN,-+Infinityを除く。数値,文字列,論理値,配列,オブジェクト,BigInt,正規表現(/[a-z]/等の表現があるが実際はRegExpｲﾝｽﾀﾝｽ故除外))
     isPrim = (v)=>null!==value && 'object'!==typeof v, // nullやundefinedもプリミティブ値だがそれらは除外する
     primTypes = ()=>[Boolean,Number,BigInt,String,Integer,Float], // プリミティブ型一覧(undefined,null,symbolを除く)
     isPrimIns = (v)=>primTypes().some(T=>v instanceof T); // プリミティブ型インスタンスか
@@ -63,11 +55,9 @@ class VarAssignable {// 変数への代入可能性。型を定義するのに�
 class QuantityArgs {
     static get #NAMES() {return 'value naned infinited unsafed unsigned min max'.split(' '); }
     static get #defaultOptions() { return {
-//        value: undefined,
         value: 0,
         naned: false,
         infinited: false,
-        //unsafed: false,
         unsafed: undefined,
         unsigned: false,
         min: undefined,
@@ -75,21 +65,16 @@ class QuantityArgs {
     } }
     static argsPattern(...args) {
         if (0===args.length) { return this.#defaultOptions }
-        //else if (1===args.length) { return {...this.#defaultOptions, value:(isObj(args[0]) ? args[0] : value)} }
         else if (1===args.length) { return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
         else if (2===args.length) {
             if (isObj(args[1])) {return {...this.#defaultOptions, ...args[1], value:args[0]} }
             else {return {...this.#defaultOptions, value:args[0], naned:args[1]} }
         }
         else if (2===args.length) {return ( {...this.#defaultOptions, ...(isObj(args[1]) ? ({...args[1], value:args[0]}) : ({value:args[0], naned:args[1]})) })}
-        //else if (args.length <= this.#NAMES.length) { return args.reduce((o,n,i)=>o[this.#NAMES[i]]=args[i], {}) }
-        //else if (args.length <= this.#NAMES.length) { return {...this.#defaultOptions, ...(args.reduce((o,v,i)=>o[this.#NAMES[i]]=v, {}))}}
-        //else if (args.length <= this.#NAMES.length) { return {...this.#defaultOptions, ...(args.reduce((o,v,i)=>{console.log(o,v,i,this.#NAMES[i]);o[this.#NAMES[i]]=v;return o;}, {}))}}
         else if (args.length <= this.#NAMES.length) { return {...this.#defaultOptions, ...(args.reduce((o,v,i)=>{o[this.#NAMES[i]]=v;return o;}, {}))}}
         else {throw new TypeError(`引数の形式が不正です。${this.#NAMES}の順に渡すか、それらをキーとして持つオブジェクトを渡してください。`)}
     }
 }
-
 // JavaScriptは数をNumber型で扱うが、これは64bitメモリであり、かつIEEE754の倍精度浮動小数点数で実装されている。このため十進数表示において、整数は15桁まで、少数は17桁までは正確に表現できるが、それ以上の桁になると正確に表現できず、比較式も不正確な結果を返してしまう。しかもそれを正常とし、エラーを発生させない。
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
@@ -104,7 +89,6 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
         isBool(o.unsigned, 'unsigned');
         // 論理矛盾を解消する（infinited:trueならunsafed:trueになるはず。無限値は入るのに範囲は安全圏のみは不自然だから。でも、そうしたい場合もありそう）
         isNanInf(o.value, o.naned, o.infinited);
-//        isFloat(o.value, 'value');
         if (!isNu(o.min)) {isNanInf(o.min, o.naned, o.infinited);}
         if (!isNu(o.max)) {isNanInf(o.max, o.naned, o.infinited);}
         // 整合性(!Number.isSafeInteger(value)だと整数でなく少数が入った時に必ずエラーに成ってしまう。IsSafe()関数があれば良かったのに存在しない……)
@@ -143,15 +127,12 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
     get max() {return this._.max}
 }
 class AllFinite extends Quantity {// 有限数(非NaN,非Infinity)
-//    constructor(...args) {super(...args)}
-//    constructor(...args) {super(Quantity.validate(value, false, false, unsafed, unsigned, min, max))}
     constructor(...args) {// value, unsafed, unsigned, min, max    naned=false, infinited=falseな型である
         const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
         if (o.naned) {throw new TypeError(`nanedはtrueにできません。Quantity型で再試行してください。`)}
         if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。Quantity型で再試行してください。`)}
         console.log(args);
         const d = {
-            //value: 0<args.length && !isObj(args[0]) ? args[0] : (0<args.length && isObj(args[0]) && 'value' in args[0] ? args[0].value : 0),
             value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
             naned: false,
             infinited: false,
@@ -160,76 +141,36 @@ class AllFinite extends Quantity {// 有限数(非NaN,非Infinity)
             min: 3<args.length ? args[3] : undefined,
             max: 4<args.length ? args[4] : undefined,
         };
-        //const p = (0 < [...Object.keys(o)].length) ? ({...o, ...d}) : d;
         const p = (0 < [...Object.keys(o)].length) ? ({...d, ...o}) : d;
         super(p);
-    /*
-        const o = {...((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({}))), ...{;
-            value: 0<args.length ? args[0] : 0,
-            naned: false,
-            infinited: false,
-            unsafed: 1<args.length ? args[1] : undefined,
-            unsigned: 2<args.length ? args[2] : false,
-            min: 3<args.length ? args[3] : undefined,
-            max: 4<args.length ? args[4] : undefined,
-        };
-        if (o.)
-    */
-        /*
-        super((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({
-            value: 0<args.length ? args[0] : 0,
-            naned: false,
-            infinited: false,
-            unsafed: 1<args.length ? args[1] : undefined,
-            unsigned: 2<args.length ? args[2] : false,
-            min: 3<args.length ? args[3] : undefined,
-            max: 4<args.length ? args[4] : undefined,
-        })));
-        */
-        /*
-        const o = (1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({
-            value: 0<args.length ? args[0] : 0,
-            naned: false,
-            infinited: false,
-            unsafed: 1<args.length ? args[1] : undefined,
-            unsigned: 2<args.length ? args[2] : false,
-            min: 3<args.length ? args[3] : undefined,
-            max: 4<args.length ? args[4] : undefined,
-        }));
-        if 
-        const o0 = {
-            value: 0<args.length ? args[0] : 0,
-            naned: false,
-            infinited: false,
-            unsafed: 1<args.length ? args[1] : undefined,
-            unsigned: 2<args.length ? args[2] : false,
-            min: 3<args.length ? args[3] : undefined,
-            max: 4<args.length ? args[4] : undefined,
-        };
-        const o1 = (1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : null);
-        const o2 = o1 ? ({...o0, ...o1}) : o0;
-        super(o2);
-//    constructor(value, unsafed=false, unsigned=false, min=undefined, max=undefined) {
-//        super(Quantity.validate({value:0, naned:false, infinited:false, unsafed:undefined, unsigned:false, min:undefined, max:undefined}));
-//        super({value:0, naned:false, infinited:false, unsafed:undefined, unsigned:false, min:undefined, max:undefined, ...Quantity.validate(...args)});
-//        super({value:0, naned:false, infinited:false, unsafed:undefined, unsigned:false, min:undefined, max:undefined, ...Quantity.validate(...args)});
-//        super({value:0, naned:false, infinited:false, unsafed:unsafed, unsigned:unsigned, min:min, max:max, ...Quantity.validate(...args)});
-//        const o = {value:value, naned:false, infinited:false, unsafed:unsafed, unsigned:unsigned, min:min, max:max, ...Quantity.validate(...args)}; 
-        //super(value, false, false, unsafed, unsigned, min, max);
-//        super({value:value, naned:false, infinited:false, unsafed:unsafed, unsigned:unsigned, min:min, max:max});
-        */
     }
-/*
-*/
 }
 class UnsafedFinite extends AllFinite {// 危険(Number.M(IN|AX)_SAFE_INTEGER範囲外を許容する)な有限数(非NaN,非Infinity)
 //    constructor(...args) {super(...args)}
 //    constructor(...args) {super(Quantity.validate(value, false, false, true, unsigned, min, max))}
+    /*
     constructor(value, unsigned=false, min=undefined, max=undefined) {
         super(value, true, unsigned, min, max);
     }
-    /*
     */
+    constructor(...args) {
+        const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
+        if (o.naned) {throw new TypeError(`nanedはtrueにできません。Quantity型で再試行してください。`)}
+        if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。Quantity型で再試行してください。`)}
+        if (false===o.unsafed) {throw new TypeError(`unsafedはfalseにできません。Quantity/AllFinite/Finite型で再試行してください。`)}
+        console.log(args);
+        const d = {
+            value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
+            naned: false,
+            infinited: false,
+            unsafed: true,
+            unsigned: 1<args.length && !isObj(args[1]) ? args[1] : false,
+            min: 2<args.length ? args[2] : undefined,
+            max: 3<args.length ? args[3] : undefined,
+        };
+        const p = (0 < [...Object.keys(o)].length) ? ({...d, ...o}) : d;
+        super(p);
+    }
 }
 class Finite extends AllFinite {// 安全(Number.M(IN|AX)_SAFE_INTEGER範囲内)な有限数(非NaN,非Infinity)
 //    constructor(...args) {super(Quantity.validate(value, false, false, false, unsigned, min, max))}
