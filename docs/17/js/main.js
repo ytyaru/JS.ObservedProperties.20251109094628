@@ -377,7 +377,16 @@ window.addEventListener('DOMContentLoaded', (event) => {
         !f.unsigned,
         Number.MIN_SAFE_INTEGER===f.min,
         Number.MAX_SAFE_INTEGER===f.max);
-        console.log(f.value)
+        console.log(
+        f instanceof Obs.C.AllFloat,
+        f.value,
+        f.naned,
+        f.infinited,
+        f.unsafed,
+        f.unsigned,
+        f.min,
+        f.max);
+        console.log(f.value, f.min)
         return f instanceof Obs.C.AllFloat && 0===f.value && !f.naned && !f.infinited && !f.unsafed && !f.unsigned && Number.MIN_SAFE_INTEGER===f.min && Number.MAX_SAFE_INTEGER===f.max;
     });
     a.t(()=>{

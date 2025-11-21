@@ -64,10 +64,33 @@ class QuantityArgs {
         max: undefined,
     } }
     static argsPattern(...args) {
+        console.log(`QuantityArgs.argsPattern:`, args);
         console.log(args.length, args, isObj(args[0]), args[0]);
         if (0===args.length) { return this.#defaultOptions }
         //else if (1===args.length) { return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
-        else if (1===args.length) { console.log((isObj(args[0]) ? args[0] : ({value:args[0]}))); return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
+        //else if (1===args.length) { console.log((isObj(args[0]) ? args[0] : ({value:args[0]}))); return {...this.#defaultOptions, ...(isObj(args[0]) ? args[0] : ({value:args[0]}))} }
+        else if (1===args.length) {
+            console.log((isObj(args[0]) ? args[0] : ({value:args[0]})));
+            //const o = (isObj(args[0]) ? args[0] : ({value:args[0]}));
+            const o = Array.isArray(args[0]) ? ({
+                value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
+                naned: 1<args.length && !isObj(args[1]) ? args[1] : false,
+                infinited: 2<args.length ? args[2] : false,
+                unsafed: 3<args.length ? args[3] : undefined,
+                unsigned: 4<args.length ? args[4] : false,
+                min: 5<args.length ? args[5] : undefined,
+                max: 6<args.length ? args[6] : undefined,
+            }) : (isObj(args[0]) ? args[0] : ({value:args[0]}));
+            console.log(this.#defaultOptions);
+            console.log(o);
+            const p = {...this.#defaultOptions, ...o}; // バグ 
+            const q = Object.assign(this.#defaultOptions, o);
+            console.log(p);
+            console.log(q);
+            return p;
+//            console.log({...this.#defaultOptions, ...o});
+//            return {...this.#defaultOptions, ...o};
+        }
         else if (2===args.length) {
             if (isObj(args[1])) {return {...this.#defaultOptions, ...args[1], value:args[0]} }
             else {return {...this.#defaultOptions, value:args[0], naned:args[1]} }
@@ -80,6 +103,7 @@ class QuantityArgs {
 // JavaScriptは数をNumber型で扱うが、これは64bitメモリであり、かつIEEE754の倍精度浮動小数点数で実装されている。このため十進数表示において、整数は15桁まで、少数は17桁までは正確に表現できるが、それ以上の桁になると正確に表現できず、比較式も不正確な結果を返してしまう。しかもそれを正常とし、エラーを発生させない。
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
+        console.log(`Quantity.validate:`, args);
         const o = QuantityArgs.argsPattern(...args);
         console.log(o);
         if (o.infinited) {
@@ -112,7 +136,8 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
         super(o.value);
         this._ = o;
 //        this._.value = o.value ?? 0===args.length ? 0 : args[0];
-        if (undefined===this._.value) {this._.value = o.value ?? ((0===args.length || undefined===args[0]) ? 0 : args[0])}
+//        if (undefined===this._.value) {this._.value = o.value ?? ((0===args.length || undefined===args[0]) ? 0 : args[0])}
+        if (undefined===this._.value) {this._.value=0}
         console.log(this._.value, o.value, args, (0===args.length || undefined===args[0]), args[0])
     }
     validate(v) {return Quantity.validate(v ?? this.valueOf(), this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max);}
@@ -131,6 +156,7 @@ class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容
 }
 class AllFinite extends Quantity {// 有限数(非NaN,非Infinity)
     constructor(...args) {// value, unsafed, unsigned, min, max    naned=false, infinited=falseな型である
+        console.log('AllFinite.constructor:', args);
         const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
         if (o.naned) {throw new TypeError(`nanedはtrueにできません。Quantity型で再試行してください。`)}
         if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。Quantity型で再試行してください。`)}
@@ -186,11 +212,11 @@ class Finite extends AllFinite {// 安全(Number.M(IN|AX)_SAFE_INTEGER範囲内)
 //        super(value, false, unsigned, min, max);
 //    }
     constructor(...args) {
+        console.log('Finite.constructor:', args);
         const o = ((1===args.length && isObj(args[0])) ? args[0] : ((2===args.length && isObj(args[1])) ? args[1] : ({})));
         if (o.naned) {throw new TypeError(`nanedはtrueにできません。Quantity型で再試行してください。`)}
         if (o.infinited) {throw new TypeError(`infinitedはtrueにできません。Quantity型で再試行してください。`)}
         if (true===o.unsafed) {throw new TypeError(`unsafedはtrueにできません。Quantity/AllFinite/UnsafedFinite型で再試行してください。`)}
-        console.log(args);
         const d = {
             value: 0<args.length && !isObj(args[0]) ? args[0] : 0,
             naned: false,
@@ -264,6 +290,7 @@ class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infin
     }
     #setNearlyValue(v) {if (this.nearlyEqual(v, super.value)) {super.value = v}} // ほぼ同じ値ならピッタリの値をセットする。等号===比較できるように。
 }
+/*
 class Float extends AllFloat { constructor(value, min=undefined, max=undefined) { super(value, false, min, max); } }
 class Rate extends AllFloat { constructor(value) {super(value, true, 0, 1)} }// 比率(0〜1の実数)
 class Percent extends AllFloat { constructor(value) {super(value, true, 0, 100)} }// 百分率(0〜100の実数)
@@ -271,6 +298,16 @@ class UnsignedFloat extends AllFloat { constructor(value, min=undefined, max=und
 class UnsignedRate extends AllFloat { constructor(value) {super(value, true, 0, 1)} }// 比率(0〜1の実数)
 class UnsignedPercent extends AllFloat { constructor(value) {super(value, true, 0, 100)} }// 百分率(0〜100の実数)
 class CenterdFloat extends AllFloat { constructor(value, width) {super(value, false, -width, width)} }// 0を中心とした同じ幅をもつ実数
+*/
+// value, unsafed, unsigned, min, max
+class Float extends AllFloat { constructor(value, min=undefined, max=undefined) { super(value, false, false, min, max); } }
+class Rate extends AllFloat { constructor(value) {super(value, false, true, 0, 1)} }// 比率(0〜1の実数)
+class Percent extends AllFloat { constructor(value) {super(value, false, true, 0, 100)} }// 百分率(0〜100の実数)
+class UnsignedFloat extends AllFloat { constructor(value, min=undefined, max=undefined) { super(value, false, true, min, max); } }
+class UnsignedRate extends AllFloat { constructor(value) {super(value, false, true, 0, 1)} }// 比率(0〜1の実数)
+class UnsignedPercent extends AllFloat { constructor(value) {super(value, false, true, 0, 100)} }// 百分率(0〜100の実数)
+class CenterdFloat extends AllFloat { constructor(value, width) {super(value, false, false, -width, width)} }// 0を中心とした同じ幅をもつ実数
+
 // 最近接遇数丸め（銀行家丸め。四捨五入時に5の時偶数になるほうへ丸める）
 // roundToNearestEven()
 // halfEven()
