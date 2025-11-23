@@ -395,21 +395,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.allFloat(NaN, true)); // trueはunsigned
     a.e(TypeError, `nanedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.allFloat(NaN, {naned:true}));
     a.e(TypeError, `infinitedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.allFloat(Infinity, {infinited:true}));
-//    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.allFloat(NaN, {naned:true}));
     a.e(TypeError, `unsafedはtrueにできません。Quantity/AllFinite/UnsafedFinite型で再試行してください。`, ()=>Obs.T.allFloat(-123, {unsafed:true}));
-    /*
-    a.t(()=>{
-        const f = Obs.T.allFloat(-123, {unsafed:true});
-        return f instanceof Obs.C.AllFloat && -123===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
-    });
-    a.t(()=>{
-        const f = Obs.T.allFloat(123, {unsigned:true});
-        return f instanceof Obs.C.AllFloat && 123===f.value && !f.naned && !f.infinited &&  f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_VALUE===f.max;
-    });
-    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.allFloat(-1, {unsigned:true}));
-    */
-    //a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.allFloat(-1, {unsigned:true}));
-    //a.e(TypeError, `unsignedはtrueにできません。Quantity/AllFinite/Finite/UnsafedFinite/AllFloat/UnsignedFloat型で再試行してください。`, ()=>Obs.T.allFloat(-1, {unsigned:true}));
     a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.allFloat(-1, {unsigned:true}));
     a.t(()=>{
         const f = Obs.T.allFloat(0, {unsigned:true});
@@ -445,20 +431,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.float(NaN, true)); // trueはunsigned
     a.e(TypeError, `nanedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.float(NaN, {naned:true}));
     a.e(TypeError, `infinitedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.float(Infinity, {infinited:true}));
-//    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.float(NaN, {naned:true}));
     a.e(TypeError, `unsafedはtrueにできません。Quantity/AllFinite/UnsafedFinite型で再試行してください。`, ()=>Obs.T.float(-123, {unsafed:true}));
-    /*
-    a.t(()=>{
-        const f = Obs.T.float(-123, {unsafed:true});
-        return f instanceof Obs.C.Float && -123===f.value && !f.naned && !f.infinited &&  f.unsafed && !f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
-    });
-    a.t(()=>{
-        const f = Obs.T.float(123, {unsigned:true});
-        return f instanceof Obs.C.Float && 123===f.value && !f.naned && !f.infinited &&  f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_VALUE===f.max;
-    });
-    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.float(-1, {unsigned:true}));
-    */
-    //a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.float(-1, {unsigned:true}));
     a.e(TypeError, `unsignedはtrueにできません。Quantity/AllFinite/Finite/UnsafedFinite/AllFloat/UnsignedFloat型で再試行してください。`, ()=>Obs.T.float(-1, {unsigned:true}));
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.float(Number.MIN_SAFE_INTEGER-1));
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.float(Number.MAX_SAFE_INTEGER+1));
@@ -489,25 +462,132 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.ufloat(NaN, true)); // trueはunsigned
     a.e(TypeError, `nanedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.ufloat(NaN, {naned:true}));
     a.e(TypeError, `infinitedはtrueにできません。Quantity型で再試行してください。`, ()=>Obs.T.ufloat(Infinity, {infinited:true}));
-//    a.e(TypeError, `naned=falseなのにvalue=NaNです。`, ()=>Obs.T.ufloat(NaN, {naned:true}));
     a.e(TypeError, `unsafedはtrueにできません。Quantity/AllFinite/UnsafedFinite型で再試行してください。`, ()=>Obs.T.ufloat(-123, {unsafed:true}));
-    /*
-    a.t(()=>{
-        const f = Obs.T.ufloat(-123, {unsafed:true});
-        return f instanceof Obs.C.UnsignedFloat && -123===f.value && !f.naned && !f.infinited &&  f.unsafed &&  f.unsigned && -Number.MAX_VALUE===f.min && Number.MAX_VALUE===f.max;
-    });
-    a.t(()=>{
-        const f = Obs.T.ufloat(123, {unsigned:true});
-        return f instanceof Obs.C.UnsignedFloat && 123===f.value && !f.naned && !f.infinited &&  f.unsafed &&  f.unsigned && 0===f.min && Number.MAX_VALUE===f.max;
-    });
-    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.ufloat(-1, {unsigned:true}));
-    */
-    //a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.ufloat(-1, {unsigned:true}));
-    //a.e(TypeError, `unsignedはにできません。Quantity/AllFinite/Finite/UnsafedFinite/AllUnsignedFloat/UnsignedUnsignedFloat型で再試行してください。`, ()=>Obs.T.ufloat(-1, {unsigned:true}));
     a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.ufloat(-1, {unsigned:true}));
     a.e(TypeError, `unsignedはfalseにできません。Quantity/AllFinite/Finite/UnsafedFinite/AllFloat/Float型で再試行してください。`, ()=>Obs.T.ufloat(0, {unsigned:false}));
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.ufloat(Number.MIN_SAFE_INTEGER-1));
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.ufloat(Number.MAX_SAFE_INTEGER+1));
+
+    // RoundFloat
+    a.t(()=>{
+        const v = Obs.T.round();
+        return v instanceof Obs.C.RoundFloat && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.fig && 'round'===v.roundMethodName && '0'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123, 0]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.fig && 'round'===v.roundMethodName && '123'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123, 1]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 1===v.fig && 'round'===v.roundMethodName && '123.0'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.00'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123.4, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123.4===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.40'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123.45, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123.45===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.45'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123.456, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123.456===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.46'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123.455, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123.455===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.46'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123.465, 2]);
+        console.log(`v:${v}`); // 123.47 になる。もしhalfEvenなら 123.46 。
+        return v instanceof Obs.C.RoundFloat && 123.465===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.47'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123.475, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123.475===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.48'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.round([123.454, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.RoundFloat && 123.454===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'round'===v.roundMethodName && '123.45'===`${v}`;
+    });
+
+    // HalfEvenFloat
+    a.t(()=>{
+        const v = Obs.T.halfEven();
+        return v instanceof Obs.C.HalfEvenFloat && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.fig && 'halfEven'===v.roundMethodName && '0'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123, 0]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.fig && 'halfEven'===v.roundMethodName && '123'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123, 1]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 1===v.fig && 'halfEven'===v.roundMethodName && '123.0'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.00'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123.4, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123.4===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.40'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123.45, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123.45===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.45'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123.456, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123.456===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.46'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123.455, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123.455===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.46'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123.465, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123.465===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.46'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.halfEven([123.475, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123.475===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.48'===`${v}`;
+    });
+
+
+    a.t(()=>{
+        const v = Obs.T.halfEven([123.454, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.HalfEvenFloat && 123.454===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.45'===`${v}`;
+    });
+
+
+
+
+
+
+
 
 
     // options引数
