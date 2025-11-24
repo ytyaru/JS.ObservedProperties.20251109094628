@@ -243,7 +243,7 @@ class AllFloat extends Finite {// IEEE倍精度浮動小数点数かつNaN,Infin
     }
     static nearlyEqual(...args) {// 等号===の代替。JSのNumber型は64bit浮動少数点数であり比較等号===では完全一致確認できない（console.assert(0.3===0.1+0.2）でエラーになる）これをいくらか解決する。但し15桁の少数まで。console.assert(nearlyEqual(0.3, 0.1+0.2))でエラーにならない。
         if (args.length < 2) {throw new TypeError(`引数は比較する数を2個以上渡してください。`)}
-        if (!args.every(v=>'number'!==typeof v)) {throw new TypeError(`引数値は全てNumberプリミティブ値であるべきです。`)}
+        if (!args.every(v=>'number'===typeof v)) {throw new TypeError(`引数値は全てNumberプリミティブ値であるべきです。`)}
         const F = args[0];
         const S = args.slice(1);
         const R = [];
@@ -532,9 +532,14 @@ class RoundableFloat extends AllFloat {// IEEE754による倍精度浮動小数�
         const D = 10**fig; // 0:1, 1:10, 2:100, ... figが15までであるべき理由はNumber型の整数が十進数の15桁までしか安全に計測できないから。
         const I = Math.trunc(V);
         if (0===fig) {return `${I}`}
-        const F = NumberRounder[R](V - I, fig);
-        const G = NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
-        console.log(this.value, fig, R, D, F, G, G.toString().padEnd(fig, '0'));
+        const F = V - I;
+//        const F = NumberRounder[R](V - I, fig);
+//        const G = NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
+        //const G = F * D; // 123.456789 * 1000 = 123.456 => '123.456'
+        //const G = 'ceil'===R ? parseInt(F*D) : NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
+        //const G = 'ceil'===R ? Math.ceil(F*D) : NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
+        const G = 'ceil'===R ? Math.round(F*D) : NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
+        console.log(this.value, fig, R, D, F, G, F*D, G.toString().padEnd(fig, '0'));
         //return `${I}.${G}`; // RoundableFloat([123.45678, 2]).toTrunc(): 123.45
 //        return `${I}.${G.toFixed(fig)}`; // RoundableFloat([123.45678, 2]).toTrunc(): 123.45
         return `${I}.${G.toString().padEnd(fig, '0')}`; // RoundableFloat([123.45678, 2]).toTrunc(): 123.45

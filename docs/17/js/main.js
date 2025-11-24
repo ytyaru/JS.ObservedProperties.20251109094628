@@ -468,6 +468,12 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.ufloat(Number.MIN_SAFE_INTEGER-1));
     a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.ufloat(Number.MAX_SAFE_INTEGER+1));
 
+    a.f(0.3===(0.1+0.2)); // 0.300000000000000004
+    a.f(0.8===(0.1+0.7)); // 0.799999999999999999
+    // 誤差でイコールにならない所をイコール判定する
+    a.t(Float.eq(0.3, 0.1+0.2));
+    a.t(Float.eq(0.8, 0.1+0.7));
+
     // RoundFloat
     a.t(()=>{
         const v = Obs.T.round();
@@ -574,13 +580,68 @@ window.addEventListener('DOMContentLoaded', (event) => {
         console.log(`v:${v}`);
         return v instanceof Obs.C.HalfEvenFloat && 123.475===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.48'===`${v}`;
     });
-
-
     a.t(()=>{
         const v = Obs.T.halfEven([123.454, 2]);
         console.log(`v:${v}`);
         return v instanceof Obs.C.HalfEvenFloat && 123.454===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'halfEven'===v.roundMethodName && '123.45'===`${v}`;
     });
+
+    // CeilFloat
+    a.t(()=>{
+        const v = Obs.T.ceil();
+        return v instanceof Obs.C.CeilFloat && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.fig && 'ceil'===v.roundMethodName && '0'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123, 0]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.CeilFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.fig && 'ceil'===v.roundMethodName && '123'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123, 1]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.CeilFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 1===v.fig && 'ceil'===v.roundMethodName && '123.0'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.CeilFloat && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.00'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123.4, 2]);
+        console.log(`v:${v}`); // 123.41 記入していない部分はゼロにして欲しいが、IEEE754仕様による誤差が生じるため、こうなってしまう。
+        return v instanceof Obs.C.CeilFloat && 123.4===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.40'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123.45, 2]);
+        console.log(`v:${v}`); // 123.46 記入していない部分はゼロにして欲しいが、IEEE754仕様による誤差が生じるため、こうなってしまう。
+        return v instanceof Obs.C.CeilFloat && 123.45===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.45'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123.456, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.CeilFloat && 123.456===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.46'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123.455, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.CeilFloat && 123.455===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.46'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123.465, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.CeilFloat && 123.465===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.47'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123.475, 2]);
+        console.log(`v:${v}`); // 123.49 これは明らかに間違い。
+        return v instanceof Obs.C.CeilFloat && 123.475===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.48'===`${v}`;
+    });
+    a.t(()=>{
+        const v = Obs.T.ceil([123.454, 2]);
+        console.log(`v:${v}`);
+        return v instanceof Obs.C.CeilFloat && 123.454===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'ceil'===v.roundMethodName && '123.46'===`${v}`;
+    });
+
 
 
 
