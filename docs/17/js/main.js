@@ -1035,9 +1035,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return v instanceof Obs.C.TruncFloat && -123.454===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'trunc'===v.roundMethodName && '-123.45'===`${v}`;
     });
 
-
-
-
     // TruncFloat
     a.t(()=>{
         const v = Obs.T.trunc();
@@ -1093,6 +1090,85 @@ window.addEventListener('DOMContentLoaded', (event) => {
         console.log(`v:${v}`);
         return v instanceof Obs.C.TruncFloat && -123.454===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 2===v.fig && 'trunc'===v.roundMethodName && '-123.45'===`${v}`;
     });
+
+    // AllInt
+    a.t(()=>{
+        const v = Obs.T.aint();
+        console.log(v instanceof Obs.C.AllInteger, 0===v.value, !v.naned, !v.infinited, !v.unsafed, !v.unsigned, Number.MIN_SAFE_INTEGER===v.min, Number.MAX_SAFE_INTEGER===v.max, 0===v.bit);
+        console.log(v.value, v.bit, v.min, v.max);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.aint(123);
+        return v instanceof Obs.C.AllInteger && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.aint(Number.MAX_SAFE_INTEGER+1));
+    a.t(()=>{
+        const v = Obs.T.aint(Number.MAX_SAFE_INTEGER+1, true);
+        return v instanceof Obs.C.AllInteger && Number.MAX_SAFE_INTEGER+1===v.value && !v.naned && !v.infinited &&  v.unsafed && !v.unsigned && -Number.MAX_VALUE===v.min && Number.MAX_VALUE===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.aint(Number.MAX_SAFE_INTEGER+1, true, true);
+        return v instanceof Obs.C.AllInteger && Number.MAX_SAFE_INTEGER+1===v.value && !v.naned && !v.infinited &&  v.unsafed &&  v.unsigned && 0===v.min && Number.MAX_VALUE===v.max && 0===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1.7976931348623157e+308`, ()=>Obs.T.aint(-1, true, true));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:1, min:-1, max:0`, ()=>Obs.T.aint(1, false, false, 1));
+    a.t(()=>{
+        const v = Obs.T.aint(0, false, false, 1);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -1===v.min && 0===v.max && 1===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.aint(-1, false, false, 1);
+        return v instanceof Obs.C.AllInteger && -1===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -1===v.min && 0===v.max && 1===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.aint(0, false, true, 1);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 1===v.max && 1===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.aint(1, false, true, 1);
+        return v instanceof Obs.C.AllInteger && 1===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 1===v.max && 1===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:1`, ()=>Obs.T.aint(-1, false, true, 1));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:2, min:0, max:1`, ()=>Obs.T.aint(2, false, true, 1));
+    a.t(()=>{
+        const v = Obs.T.aint(0, false, true, 2);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 3===v.max && 2===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.aint(0, false, true, 3);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**3-1)===v.max && 3===v.bit;
+    });
+    a.t(()=>{
+        const bit = 4;
+        const v = Obs.T.aint(0, false, true, bit);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**bit-1)===v.max && bit===v.bit;
+    });
+    a.t(()=>{
+        const bit = 8;
+        const v = Obs.T.aint(0, false, true, bit);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**bit-1)===v.max && bit===v.bit;
+    });
+    a.t(()=>{
+        const bit = 16;
+        const v = Obs.T.aint(0, false, true, bit);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**bit-1)===v.max && bit===v.bit;
+    });
+    a.t(()=>{
+        const bit = 32;
+        const v = Obs.T.aint(0, false, true, bit);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**bit-1)===v.max && bit===v.bit;
+    });
+    a.t(()=>{
+        const bit = 53;
+        const v = Obs.T.aint(0, false, true, bit);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**bit-1)===v.max && bit===v.bit;
+    });
+    a.e(TypeError, `bitは1〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 54));
+    a.e(TypeError, `bitは1〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 0.1));
+
+
+
 
 
 

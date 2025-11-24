@@ -104,7 +104,7 @@ class QuantityArgs {
 // JavaScriptは数をNumber型で扱うが、これは64bitメモリであり、かつIEEE754の倍精度浮動小数点数で実装されている。このため十進数表示において、整数は15桁まで、少数は17桁までは正確に表現できるが、それ以上の桁になると正確に表現できず、比較式も不正確な結果を返してしまう。しかもそれを正常とし、エラーを発生させない。
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
-//        console.log(`Quantity.validate:`, args);
+        console.log(`Quantity.validate:`, args);
         const o = QuantityArgs.argsPattern(...args);
 //        console.log(o);
         if (o.infinited) {
@@ -820,17 +820,32 @@ class IntegerDecimal extends NumberDecimal {// 十進数における整数と少
 class AllInteger extends Quantity {
     static validate(value, unsafed=false, unsigned=false, bit=0, min=undefined, max=undefined) {
         console.log(`AllInteger.validate:`, value, unsafed, unsigned, bit, min, max);
-        if (unsafed && bit) {// 論理矛盾を解消する
+        if (unsafed && 0<bit) {// 論理矛盾を解消する
             console.warn(`unsafed=trueなら範囲制限なしになります。つまり、bit=0,min=undefined,max=undefinedになります。`)
             min = undefined;
             max = undefined;
+        } else {
+            console.log(bit, min, max);
+            //const {MIN,MAX} = this.validateMinMax(unsafed, unsigned, bit, min, max);
+            const m = this.validateMinMax(unsafed, unsigned, bit, min, max);
+            min = m.min; max = m.max;
         }
+        console.log(unsafed && 0<bit, min, max);
+//        const {MIN,MAX} = this.validateMinMax(unsafed, unsigned, bit, min, max);
         //return {...Quantity.validate(value, false, false, unsafed, unsigned, min, max, 0), ...this.validateMinMax(unsafed, unsigned, bit, min, max)};
-        return {...Quantity.validate(value, false, false, unsafed, unsigned, min, max), ...this.validateMinMax(unsafed, unsigned, bit, min, max)};
+        //return {...Quantity.validate(value, false, false, unsafed, unsigned, min, max), ...this.validateMinMax(unsafed, unsigned, bit, min, max), bit:bit};
+        //const o = {...Quantity.validate(value, false, false, unsafed, unsigned, min, max), ...this.validateMinMax(unsafed, unsigned, bit, min, max), bit:bit};
+        //const o = {...Quantity.validate(value, false, false, unsafed, unsigned, min, max), bit:bit, min:min, max:max};
+        const o = {...Quantity.validate(value, false, false, unsafed, unsigned, min, max), bit:bit};
+        //if (o.min && o.min < o.value) {throw new RangeError()}
+        if (!Number.isNaN(o.value) && (o.value < o.min || o.max < o.value)) {throw new RangeError(`valueがmin〜maxの範囲を超過しています。:value:${o.value}, min:${o.min}, max:${o.max}`)}
+        return o;
     }
     static validateMinMax(unsafed, unsigned, bit, min, max) {
         console.log('AllInteger.validateMinMax:', unsafed, unsigned, bit, min, max);
+        if (!(Number.isSafeInteger(bit) && -1 < bit && bit < 54)) {throw new TypeError(`bitは0〜53までのNumber型整数値であるべきです。`)}
         const [MIN, MAX] = getIntRange(unsafed, unsigned, bit, min, max);
+        console.log(MIN, MAX);
         // unsafed/unsigned/bit と min/max が矛盾しないこと
         validRange(false, MIN, min, 'min');
         validRange(false, MAX, max, 'max');
@@ -851,10 +866,34 @@ class AllInteger extends Quantity {
 //        return {min:MIN, max:MAX};
     }
     constructor(value, unsafed=false, unsigned=false, bit=0, min=undefined, max=undefined) {
-        super(value);
+//        this._ = Integer.validate(value, unsafed, unsigned, bit, min, max);
+//        super(this._.value, this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max);
+        //const o = Integer.validate(value, unsafed, unsigned, bit, min, max);
+        console.log(bit, min, max);
+        const o = AllInteger.validate(value, unsafed, unsigned, bit, min, max);
+        console.log(o);
+        super(o.value, o.naned, o.infinited, o.unsafed, o.unsigned, o.min, o.max);
+        this._ = o;
+        if (undefined===this._.value) {this._.value = 0;}
+        /*
+        super(value, false, false, unsafed, unsigned, min, max);
         //this._ = {...Integer.validate(value, unsafed, unsigned, bit, min, max)};
         //this._ = Integer.validate(value, unsafed, unsigned, bit, min, max);
         this._ = AllInteger.validate(value, unsafed, unsigned, bit, min, max);
+        if (undefined===this._.value) {this._.value = 0;}
+        */
+        /*
+        const {MIN, MAX} = Integer.validate(value, unsafed, unsigned, bit, min, max);
+        super(value, false, false, unsafed, unsigned, MIN, MAX);
+        if (undefined===this._.value) {this._.value = 0;}
+        */
+        /*
+        super(value, false, false, unsafed, unsigned, min, max);
+        //this._ = {...Integer.validate(value, unsafed, unsigned, bit, min, max)};
+        //this._ = Integer.validate(value, unsafed, unsigned, bit, min, max);
+        this._ = AllInteger.validate(value, unsafed, unsigned, bit, min, max);
+        if (undefined===this._.value) {this._.value = 0;}
+        */
     }
     get bit() {return this._.bit}
     validate(v) {return AllInteger.validate(v ?? this.value, this._.unsafed, this._.unsigned, this._.bit, this._.min, this._.max);}
@@ -873,14 +912,29 @@ class Integer extends AllInteger {
         return {...Quantity.validate(value, false, false, false, unsigned, min, max), ...this.validateMinMax(unsigned, bit, min, max)};
     }
     static validateMinMax(unsigned, bit, min, max) {return AllInteger.validateMinMax(false, unsigned, bit, min, max);}
-    constructor(value, unsigned=false, bit=0, min=undefined, max=undefined) {
-        console.log('Integer.constructor:', value, unsigned, bit, min, max);
-        super(value, false, unsigned, bit, min, max);
+    //constructor(value, unsigned=false, bit=0, min=undefined, max=undefined) {
+    constructor(value, bit=0, min=undefined, max=undefined) {
+//        console.log('Integer.constructor:', value, unsigned, bit, min, max);
+//        super(value, false, unsigned, bit, min, max);
+        console.log('Integer.constructor:', value, bit, min, max);
+        super(value, false, false, bit, min, max);
         //this._ = Integer.validate(value, false, unsigned, bit, min, max);
-        this._ = Integer.validate(value, unsigned, bit, min, max);
+        //this._ = Integer.validate(value, unsigned, bit, min, max);
+        this._ = Integer.validate(value, false, bit, min, max);
         console.log(this._);
     }
     validate(v) {return Integer.validate(v ?? this.value, this._.unsigned, this._.bit, this._.min, this._.max);}
+}
+class UnsignedInteger extends AllInteger {
+    constructor(value, bit=0, min=undefined, max=undefined) {
+        console.log('UnsignedInteger.constructor:', value, unsigned, bit, min, max);
+        //super(value, true, unsigned, bit, min, max);
+        super(value, false, true, bit, min, max);
+        //this._ = Integer.validate(value, false, unsigned, bit, min, max);
+        //this._ = Integer.validate(value, unsigned, bit, min, max);
+        this._ = Integer.validate(value, true, bit, min, max);
+        console.log(this._);
+    }
 }
 class RangedBigInteger extends BigInt {
     constructor(value=0n, unsigned=false, bit=64n, min=undefined, max=undefined, fmt=undefined) {
@@ -1636,6 +1690,7 @@ console.assert(3.14===MATH.PI);
         Finite: Finite,
         AllFloat: AllFloat,
         UnsignedFloat: UnsignedFloat,
+        UFloat: UnsignedFloat,
         Float: Float,
         Flt: Float,
         F: Float,
@@ -1646,6 +1701,11 @@ console.assert(3.14===MATH.PI);
         FloorFloat: FloorFloat,
         TruncFloat: TruncFloat,
         CeilFloat: CeilFloat,
+        AllInteger: AllInteger,
+        AInt: AllInteger,
+        UnsignedInteger: UnsignedInteger,
+        UInt: UnsignedInteger,
+        UI: UnsignedInteger,
         Integer: Integer,
         Int: Integer,
         I: Integer,
@@ -1690,9 +1750,18 @@ console.assert(3.14===MATH.PI);
         trunc:(...args)=>new TruncFloat(...args),
         ceilFloat:(...args)=>new CeilFloat(...args),
         ceil:(...args)=>new CeilFloat(...args),
-        i:(...args)=>new Integer(...args),
-        int:(...args)=>new Integer(...args),
+        allInteger:(...args)=>new AllInteger(...args),
+        allInt:(...args)=>new AllInteger(...args),
+        aInt:(...args)=>new AllInteger(...args),
+        aint:(...args)=>new AllInteger(...args),
+        ai:(...args)=>new AllInteger(...args),
+        unsignedInteger:(...args)=>new UnsignedInteger(...args),
+        uInt:(...args)=>new UnsignedInteger(...args),
+        uint:(...args)=>new UnsignedInteger(...args),
+        ui:(...args)=>new UnsignedInteger(...args),
         integer:(...args)=>new Integer(...args),
+        int:(...args)=>new Integer(...args),
+        i:(...args)=>new Integer(...args),
         numberDecimal:(...args)=>new NumberDecimal(...args),
         numDec:(...args)=>new NumberDecimal(...args),
         nDec:(...args)=>new NumberDecimal(...args),
