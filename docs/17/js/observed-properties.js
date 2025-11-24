@@ -526,19 +526,23 @@ class RoundableFloat extends AllFloat {// IEEE754による倍精度浮動小数�
         RoundableFloat.validFig(fig);
         RoundableFloat.validMethodName(R);
         if (this._.unsafed && !Number.isFinite(this.value)) {throw new TypeError(`丸める数は有限数であるべきです。:${this.value}`)}
-        const V = NumberRounder[R](this.value, fig);
+        //const V = NumberRounder[R](this.value, fig);
+//        const V = this.value;
+        const V = ['floor','trunc'].some(n=>n===R) ? this.value : NumberRounder[R](this.value, fig);
         console.log(fig, R, this.value, V);
 //        return V;
         const D = 10**fig; // 0:1, 1:10, 2:100, ... figが15までであるべき理由はNumber型の整数が十進数の15桁までしか安全に計測できないから。
         const I = Math.trunc(V);
         if (0===fig) {return `${I}`}
-        const F = V - I;
+//        const F = V - I;
 //        const F = NumberRounder[R](V - I, fig);
+        const F = Math.abs(V - I);
 //        const G = NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
         //const G = F * D; // 123.456789 * 1000 = 123.456 => '123.456'
         //const G = 'ceil'===R ? parseInt(F*D) : NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
         //const G = 'ceil'===R ? Math.ceil(F*D) : NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
         const G = 'ceil'===R ? Math.round(F*D) : NumberRounder[R](F * D, 0); // 123.456789 * 1000 = 123.456 => '123.456'
+//        const G = Math.abs('ceil'===R ? Math.round(F*D) : NumberRounder[R](F * D, 0)); // 123.456789 * 1000 = 123.456 => '123.456'
         console.log(this.value, fig, R, D, F, G, F*D, G.toString().padEnd(fig, '0'));
         //return `${I}.${G}`; // RoundableFloat([123.45678, 2]).toTrunc(): 123.45
 //        return `${I}.${G.toFixed(fig)}`; // RoundableFloat([123.45678, 2]).toTrunc(): 123.45
