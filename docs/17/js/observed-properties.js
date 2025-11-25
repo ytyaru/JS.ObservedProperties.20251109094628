@@ -24,7 +24,13 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
                             infinited ? Infinity : (unsafed ? Number.MAX_VALUE : Number.MAX_SAFE_INTEGER)];
         return [(min && MIN<=min ? min : MIN), (max && min<=MAX ? max : MAX)];
     },
-    getIntRange = (unsafed, unsigned, bit, min, max)=>[(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
+    //getIntRange = (unsafed, unsigned, bit, min, max)=>[(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
+    getIntRange = (unsafed, unsigned, bit, min, max)=>{
+        const m = [(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
+        if (0 < bit && undefined!==min && m[0] < min) {throw new RangeError(`minがunsafed,unsigned,bitで指定した範囲外です。min:${min},unsafed:${unsafed},unsigned:${unsigned},bit:${bit}`)}
+        if (0 < bit && undefined!==max && m[1] < max) {throw new RangeError(`maxがunsafed,unsigned,bitで指定した範囲外です。max:${max},unsafed:${unsafed},unsigned:${unsigned},bit:${bit}`)}
+        return m;
+    }
     validMinMax = (min, max)=>{if(max <= min){throw new RangeError(`minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:${min},${max}`)}},
     isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v),
     isNu = (v)=>[null,undefined].some(V=>V===v),

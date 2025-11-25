@@ -1164,8 +1164,24 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const v = Obs.T.aint(0, false, true, bit);
         return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**bit-1)===v.max && bit===v.bit;
     });
-    a.e(TypeError, `bitは1〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 54));
-    a.e(TypeError, `bitは1〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 0.1));
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 54));
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 0.1));
+    a.t(()=>{
+        const v = Obs.T.aint(3, false, true, 0, 2, 8);
+        return v instanceof Obs.C.AllInteger && 3===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 2===v.min && 8===v.max && 0===v.bit;
+    });
+        const v = Obs.T.aint(3, false, true, 1, 2, 8);
+    a.t(()=>{
+        const v = Obs.T.aint(3, false, true, 1, 2, 8);
+        return v instanceof Obs.C.AllInteger && 3===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 2===v.min && 8===v.max && 0===v.bit;
+    });
+    // Int系は引数が少ないため{}options引数を使わないこととする
+    /*
+    a.t(()=>{
+        const v = Obs.T.aint({value:123});
+        return v instanceof Obs.C.AllInteger && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    */
 
 
 
