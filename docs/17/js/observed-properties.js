@@ -26,10 +26,14 @@ const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object
     },
     //getIntRange = (unsafed, unsigned, bit, min, max)=>[(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
     getIntRange = (unsafed, unsigned, bit, min, max)=>{
-        const m = [(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
-        if (0 < bit && undefined!==min && m[0] < min) {throw new RangeError(`minがunsafed,unsigned,bitで指定した範囲外です。min:${min},unsafed:${unsafed},unsigned:${unsigned},bit:${bit}`)}
-        if (0 < bit && undefined!==max && m[1] < max) {throw new RangeError(`maxがunsafed,unsigned,bitで指定した範囲外です。max:${max},unsafed:${unsafed},unsigned:${unsigned},bit:${bit}`)}
-        return m;
+        //const m = [(min ?? (unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2)))), (max ?? (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1))))];
+        const m = [(unsafed ? (unsigned ? 0 : -Number.MAX_VALUE) : (unsigned ? 0 : (0===bit ? Number.MIN_SAFE_INTEGER : -(2**bit)/2))), (unsafed ? Number.MAX_VALUE : (unsigned ? (0===bit ? Number.MAX_SAFE_INTEGER : (2**bit)-1) : (0===bit ? Number.MAX_SAFE_INTEGER : ((2**bit)/2)-1)))];
+        console.log('getIntRange:', unsafed, unsigned, bit, min, max, m);
+        if (0 < bit && undefined!==min && min < m[0]) {throw new RangeError(`minがunsafed,unsigned,bitで指定した範囲外です。min:${min},unsafed:${unsafed},unsigned:${unsigned},bit:${bit} = ${m[0]}`)}
+        if (0 < bit && undefined!==max && m[1] < max) {throw new RangeError(`maxがunsafed,unsigned,bitで指定した範囲外です。max:${max},unsafed:${unsafed},unsigned:${unsigned},bit:${bit} = ${m[1]}`)}
+//        console.log([undefined===min ? m[0] : min, undefined===max ? m[1] : max])
+        return [undefined===min ? m[0] : min, undefined===max ? m[1] : max];
+//        return m;
     }
     validMinMax = (min, max)=>{if(max <= min){throw new RangeError(`minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:${min},${max}`)}},
     isSafeNum = (v)=>(v < Number.MIN_SAFE_INTEGER || Number.MAX_SAFE_INTEGER < v),
@@ -110,7 +114,7 @@ class QuantityArgs {
 // JavaScriptは数をNumber型で扱うが、これは64bitメモリであり、かつIEEE754の倍精度浮動小数点数で実装されている。このため十進数表示において、整数は15桁まで、少数は17桁までは正確に表現できるが、それ以上の桁になると正確に表現できず、比較式も不正確な結果を返してしまう。しかもそれを正常とし、エラーを発生させない。
 class Quantity extends Number {// 数量:NaN,Infinityを制限できるし許容もできるがNumberのように同居はしない
     static validate(...args) {// value, naned=false, infinited=false, unsafed=false, unsigned=false, min=undefined, max=undefined
-        console.log(`Quantity.validate:`, args);
+//        console.log(`Quantity.validate:`, args);
         const o = QuantityArgs.argsPattern(...args);
 //        console.log(o);
         if (o.infinited) {
@@ -421,8 +425,8 @@ class NumberRounder {
     static #round(method, radix, fractionDigits=1) {// 指定した少数桁で丸める（標準APIは少数第一位固定）
         const s = (radix < 0 ? -1 : 1);
         const v = Math.abs(radix);
-        console.log(method, radix, fractionDigits);
-        console.log(s, v, this.#_round(method, v, fractionDigits));
+//        console.log(method, radix, fractionDigits);
+//        console.log(s, v, this.#_round(method, v, fractionDigits));
         return this.#_round(method, v, fractionDigits) * s;
 //        return this.#_round(method, this.#_round(method, v, fractionDigits) * s, fractionDigits);
         //const R = this.#_round(method, radix, fractionDigits=1);
@@ -535,7 +539,7 @@ class RoundableFloat extends AllFloat {// IEEE754による倍精度浮動小数�
         //const V = NumberRounder[R](this.value, fig);
 //        const V = this.value;
         const V = ['floor','trunc'].some(n=>n===R) ? this.value : NumberRounder[R](this.value, fig);
-        console.log(fig, R, this.value, V);
+//        console.log(fig, R, this.value, V);
 //        return V;
         const D = 10**fig; // 0:1, 1:10, 2:100, ... figが15までであるべき理由はNumber型の整数が十進数の15桁までしか安全に計測できないから。
         const I = Math.trunc(V);
@@ -601,7 +605,7 @@ class RounderFloat extends RoundableFloat {
         const o = RoundableFloat._validValueFigName(valueFig, methodName);
         super(0, unsigned, min, max);
         this._ = {...this._, ...o};
-        console.log(valueFig, this.fig, this.value);
+//        console.log(valueFig, this.fig, this.value);
     }
 }
 class RoundFloat extends RounderFloat {constructor(valueFig, methodName, unsigned=false, min=undefined, max=undefined) {super(valueFig, 'round', unsigned, min, max)}}
@@ -825,18 +829,18 @@ class IntegerDecimal extends NumberDecimal {// 十進数における整数と少
 }
 class AllInteger extends Quantity {
     static validate(value, unsafed=false, unsigned=false, bit=0, min=undefined, max=undefined) {
-        console.log(`AllInteger.validate:`, value, unsafed, unsigned, bit, min, max);
+//        console.log(`AllInteger.validate:`, value, unsafed, unsigned, bit, min, max);
         if (unsafed && 0<bit) {// 論理矛盾を解消する
             console.warn(`unsafed=trueなら範囲制限なしになります。つまり、bit=0,min=undefined,max=undefinedになります。`)
             min = undefined;
             max = undefined;
         } else {
-            console.log(bit, min, max);
+//            console.log(bit, min, max);
             //const {MIN,MAX} = this.validateMinMax(unsafed, unsigned, bit, min, max);
             const m = this.validateMinMax(unsafed, unsigned, bit, min, max);
             min = m.min; max = m.max;
         }
-        console.log(unsafed && 0<bit, min, max);
+//        console.log(unsafed && 0<bit, min, max);
 //        const {MIN,MAX} = this.validateMinMax(unsafed, unsigned, bit, min, max);
         //return {...Quantity.validate(value, false, false, unsafed, unsigned, min, max, 0), ...this.validateMinMax(unsafed, unsigned, bit, min, max)};
         //return {...Quantity.validate(value, false, false, unsafed, unsigned, min, max), ...this.validateMinMax(unsafed, unsigned, bit, min, max), bit:bit};
@@ -848,16 +852,16 @@ class AllInteger extends Quantity {
         return o;
     }
     static validateMinMax(unsafed, unsigned, bit, min, max) {
-        console.log('AllInteger.validateMinMax:', unsafed, unsigned, bit, min, max);
-        if (!(Number.isSafeInteger(bit) && -1 < bit && bit < 54)) {throw new TypeError(`bitは0〜53までのNumber型整数値であるべきです。`)}
+//        console.log('AllInteger.validateMinMax:', unsafed, unsigned, bit, min, max);
+        if (!(Number.isSafeInteger(bit) && -1 < bit && bit < 54)) {throw new TypeError(`bitは0〜53までのNumber型整数値であるべきです。:bit:${bit}`)}
         const [MIN, MAX] = getIntRange(unsafed, unsigned, bit, min, max);
-        console.log(MIN, MAX);
+//        console.log(MIN, MAX);
         // unsafed/unsigned/bit と min/max が矛盾しないこと
         validRange(false, MIN, min, 'min');
         validRange(false, MAX, max, 'max');
         const Min = 'number'===typeof min ? min : MIN;
         const Max = 'number'===typeof max ? max : MAX;
-        console.log(min, max, MIN, MAX, Min, Max);
+//        console.log(min, max, MIN, MAX, Min, Max);
         validMinMax(Min, Max);
         return {min:Min, max:Max};
 //        const Min = undefined===min ? MIN : min;
@@ -875,9 +879,9 @@ class AllInteger extends Quantity {
 //        this._ = Integer.validate(value, unsafed, unsigned, bit, min, max);
 //        super(this._.value, this._.naned, this._.infinited, this._.unsafed, this._.unsigned, this._.min, this._.max);
         //const o = Integer.validate(value, unsafed, unsigned, bit, min, max);
-        console.log(bit, min, max);
+//        console.log(bit, min, max);
         const o = AllInteger.validate(value, unsafed, unsigned, bit, min, max);
-        console.log(o);
+//        console.log(o);
         super(o.value, o.naned, o.infinited, o.unsafed, o.unsigned, o.min, o.max);
         this._ = o;
         if (undefined===this._.value) {this._.value = 0;}
@@ -912,7 +916,7 @@ class FuzzyInteger extends AllInteger {
 }
 class Integer extends AllInteger {
     static validate(value, unsigned=false, bit=0, min=undefined, max=undefined) {
-        console.log('Integer.validate:', value, unsigned, bit, min, max);
+//        console.log('Integer.validate:', value, unsigned, bit, min, max);
         if (!Number.isSafeInteger(value)) {throw new TypeError(`valueはNumber.isSafeInteger()で真を返す値のみ有効です。:${value}`)}
         //return {...Quantity.validate(value, false, false, false, unsigned, min, max, 0), ...this.validateMinMax(unsigned, bit, min, max)};
         return {...Quantity.validate(value, false, false, false, unsigned, min, max), ...this.validateMinMax(unsigned, bit, min, max)};
@@ -922,47 +926,65 @@ class Integer extends AllInteger {
     constructor(value, bit=0, min=undefined, max=undefined) {
 //        console.log('Integer.constructor:', value, unsigned, bit, min, max);
 //        super(value, false, unsigned, bit, min, max);
-        console.log('Integer.constructor:', value, bit, min, max);
+//        console.log('Integer.constructor:', value, bit, min, max);
         super(value, false, false, bit, min, max);
         //this._ = Integer.validate(value, false, unsigned, bit, min, max);
         //this._ = Integer.validate(value, unsigned, bit, min, max);
-        this._ = Integer.validate(value, false, bit, min, max);
-        console.log(this._);
+        //this._ = Integer.validate(value, false, bit, min, max);
+//        this._ = Integer.validate(this._.value, this._.unsigned, this._.bit, this._.min, this._.max);
+        if (!Number.isSafeInteger(this.value)) {throw new TypeError(`valueはNumber.isSafeInteger()で真を返す値のみ有効です。:${this.value}`)}
+//        console.log(this._);
     }
     validate(v) {return Integer.validate(v ?? this.value, this._.unsigned, this._.bit, this._.min, this._.max);}
 }
 class UnsignedInteger extends AllInteger {
     constructor(value, bit=0, min=undefined, max=undefined) {
-        console.log('UnsignedInteger.constructor:', value, unsigned, bit, min, max);
+//        console.log('UnsignedInteger.constructor:', value, unsigned, bit, min, max);
         //super(value, true, unsigned, bit, min, max);
         super(value, false, true, bit, min, max);
         //this._ = Integer.validate(value, false, unsigned, bit, min, max);
         //this._ = Integer.validate(value, unsigned, bit, min, max);
-        this._ = Integer.validate(value, true, bit, min, max);
-        console.log(this._);
+        if (!Number.isSafeInteger(this.value)) {throw new TypeError(`valueはNumber.isSafeInteger()で真を返す値のみ有効です。:${this.value}`)}
+//        this._ = Integer.validate(value, true, bit, min, max);
+//        console.log(this._);
     }
 }
-class RangedBigInteger extends BigInt {
+//class RangedBigInteger extends BigInt {// プリミティブ型は継承できない
+class RangedBigInteger {// プリミティブ型BigIntは継承できない
     constructor(value=0n, unsigned=false, bit=64n, min=undefined, max=undefined, fmt=undefined) {
-        super(value);
+//        super(value); // プリミティブ型はコンストラクタ呼び出しできない？
         if ('boolean'!==typeof unsigned) {throw new TypeError(`unsignedはBoolean型リテラル値であるべきです。:${unsigned}`)}
         if ('number'===typeof bit) {
             if (!(Number.isSafeInteger(bit) && 53<bit && bit<Number.MAX_SAFE_INTEGER)) {throw new TypeError(`bitがNumber型なら53より大きくNumber.isSafeInteger()な値であるべきです。53以下ならNumber継承整数型Integerを使用してください。${bit}`)}
             bit = BigInt(bit);
-        } else if ('bigint'===typeof bit && 53n<bit) {throw new TypeError(`bitがBitInt型なら53nより大きい数であるべきです。53以下ならNumber継承整数型Integerを使用してください。:${bit}`)}
-        if (!(unsigned===min || 'bigint'===typeof min)) {throw new TypeError(`minはundefinedかBitInt型リテラル値であるべきです。:${min}`)}
-        if (!(unsigned===max || 'bigint'===typeof max)) {throw new TypeError(`maxはundefinedかBitInt型リテラル値であるべきです。:${max}`)}
-        if (undefined===min) { min = (((-2n)**bit)) / (unsigned ? 1n : 2n); }
-        if (undefined===max) { max = ((2n**bit) / (unsigned ? 1n : 2n))-1n; }
+        } else if ('bigint'===typeof bit && bit<54n) {throw new TypeError(`bitがBitInt型なら53nより大きい数であるべきです。53以下ならNumber継承整数型Integerを使用してください。:${bit}`)}
+        console.log('min:', min, 'max:', max, 'bit:', bit);
+        if (!(undefined===min || 'bigint'===typeof min)) {throw new TypeError(`minはundefinedかBitInt型リテラル値であるべきです。:${min}`)}
+        if (!(undefined===max || 'bigint'===typeof max)) {throw new TypeError(`maxはundefinedかBitInt型リテラル値であるべきです。:${max}`)}
+        const MIN = unsigned ? 0n : ((2n**bit) / 2n)*-1n;
+        const MAX = ((2n**bit) / (unsigned ? 1n : 2n))-1n;
+        if (undefined!==min && min < MIN) {throw new RangeError(`minがunsigned,bitで指定した範囲外です。min:${min},unsigned:${unsigned},bit:${bit} = ${MIN}`)}
+        if (undefined!==max && MAX < max) {throw new RangeError(`maxがunsigned,bitで指定した範囲外です。max:${max},unsigned:${unsigned},bit:${bit} = ${MAX}`)}
+        //if (undefined===min) { min = (((-2n)**bit)) / (unsigned ? 1n : 2n); }
+        //if (undefined===min) { min = unsigned ? 0n : (((-2n)**bit) / 2n); }
+//        if (undefined===min) { min = unsigned ? 0n : ((2n**bit) / 2n)*-1n; }
+//        if (undefined===max) { max = ((2n**bit) / (unsigned ? 1n : 2n))-1n; }
+        if (undefined===min) { min = MIN; }
+        if (undefined===max) { max = MAX; }
+        console.log('min:', min, 'max:', max, 'bit:', bit);
+        if (max <= min) {throw new RangeError(`minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:${min},${max}`)}
         if ('bigint'!==typeof value) {throw new TypeError(`valueはBigInt型リテラル値であるべきです。:${value}`)}
-        if (!(fmt instanceof Intl.NumberFormat)) {throw new TypeError(`fmtはIntl.NumberFormat型インスタンスであるべきです。:${fmt}`)}
-        this._ = {unsigned:unsigned, bit:bit, min:min, max:max};
+        if (value < min || max < value) {throw new RangeError(`valueはmin〜maxの範囲外です。:value:${value}, min:${min}, max:${max}`)}
+        if (!(undefined===fmt || fmt instanceof Intl.NumberFormat)) {throw new TypeError(`fmtはundefinedかIntl.NumberFormat型インスタンスであるべきです。:${fmt}`)}
+        this._ = {value:value, unsigned:unsigned, bit:bit, min:min, max:max};
     }
     valueOf() {return this._.value}
     get value() {return this._.value}
     set value(v) {
         if ('bigint'!==typeof v) {throw new TypeError(`valueはBigInt型リテラル値であるべきです。`)}
-        if (v < this._.min || this._.max < v) {throw new RangeError(`valueは範囲外です。${this._.min}〜${this._.max}の範囲内であるべきです。`)}
+        //if (v < this._.min || this._.max < v) {throw new RangeError(`valueは範囲外です。${this._.min}〜${this._.max}の範囲内であるべきです。`)}
+//        if (v < this._.min || this._.max < v) {throw new RangeError(`valueは範囲外です。${this._.min}〜${this._.max}の範囲内であるべきです。`)}
+        if (v < this._.min || this._.max < v) {throw new RangeError(`valueはmin〜maxの範囲外です。:value:${v}, min:${this._.min}, max:${this._.max}`)}
         this._.value = v;
     }
     get unsigned() {return this._.unsigned}
@@ -1072,7 +1094,8 @@ class FixedObject {// 定数専用
                 options[k] = {value:v}; v = {value:v};
                 */
             }
-            if (options[k].hasOwnProperty('value') && options[k].value instanceof ObservedObject) {continue}
+//            if (options[k].hasOwnProperty('value') && options[k].value instanceof ObservedObject) {continue}
+            if (options[k].hasOwnProperty('value') && [ObservedObject, FixedObject].some(t=>options[k].value instanceof t)) {continue}
 //            console.log(k, v);
             if (!options[k].hasOwnProperty('value') && !options[k].hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
             else if (options[k].hasOwnProperty('value') && !options[k].hasOwnProperty('type')) {
@@ -1089,7 +1112,8 @@ class FixedObject {// 定数専用
     }
     #makeDescriptor(k, v) {
         this._.prop[k] = undefined;
-        const isObs = (v instanceof ObservedObject);
+//        const isObs = (v instanceof ObservedObject);
+        const isObs = ([ObservedObject, FixedObject].some(t=>v instanceof t));
         const desc = {
             configurable: false,
             enumerable: true,
@@ -1123,7 +1147,8 @@ class ObservedObject {
         this.#setDefaultOptions(iOpt);
         for (let [k, v] of Object.entries(this._.opt)) { this.#makeDescriptor(k, v); }
         //this._.oOpt = ([undefined,null].some(v=>v===oOpt)) ? ({}) : (oOpt instanceof ObservedObject) ? oOpt : new ObservedObject(oOpt);
-        this._.oProp = ([undefined,null].some(v=>v===oOpt)) ? ({}) : (oOpt instanceof ObservedObject) ? oOpt : new ObservedObject(oOpt);
+        //this._.oProp = ([undefined,null].some(v=>v===oOpt)) ? ({}) : (oOpt instanceof ObservedObject) ? oOpt : new ObservedObject(oOpt);
+        this._.oProp = ([undefined,null].some(v=>v===oOpt)) ? ({}) : ([ObservedObject, FixedObject].some(t=>oOpt instanceof t)) ? oOpt : new ObservedObject(oOpt);
         if ('function'===typeof update) {this._.update = update;}
         this.#update();
 //        console.log(this);
@@ -1132,7 +1157,9 @@ class ObservedObject {
     #checkArgs(iOpt, oOpt, update) {
         const isObj = (v)=>null!==v && 'object'===typeof v && '[object Object]'===Object.prototype.toString.call(v);
         if (!isObj(iOpt)) {throw new TypeError(`第一引数iOptはプロパティ名とその型などの情報を持つオブジェクトであるべきです。例:{name:{value:''}, age:{value:0, valid:Obs.valid.range(0,100)}}`)}
-        if (undefined!==oOpt && null!==oOpt && !isObj(oOpt) && !(oOpt instanceof ObservedObject)) {throw new TypeError(`第二引数oOptはObsインスタンスまたはプロパティ名とその型などの情報を持つオブジェクトであるべきです。例:{name:{value:''}, age:{value:0, valid:Obs.valid.range(0,100)}}`)}
+        //if (undefined!==oOpt && null!==oOpt && !isObj(oOpt) && !(oOpt instanceof ObservedObject)) {throw new TypeError(`第二引数oOptはObsインスタンスまたはプロパティ名とその型などの情報を持つオブジェクトであるべきです。例:{name:{value:''}, age:{value:0, valid:Obs.valid.range(0,100)}}`)}
+        if (undefined!==oOpt && null!==oOpt && !isObj(oOpt) && !([ObservedObject, FixedObject].some(t=>oOpt instanceof t))) {throw new TypeError(`第二引数oOptはObsインスタンスまたはプロパティ名とその型などの情報を持つオブジェクトであるべきです。例:{name:{value:''}, age:{value:0, valid:Obs.valid.range(0,100)}}`)}
+
         if (undefined!==update && 'function'!==typeof update) {throw new TypeError(`第三引数updateはプロパティに値を代入したら実行されるコールバック関数であるべきです。例: (i,o)=>o.msg = '名:' + i.name + ' 年:' + i.age;`)}
     }
     #checkKeys(iOpt) {
@@ -1186,8 +1213,10 @@ class ObservedObject {
             //if (iOpt.hasOwnProperty('value') && iOpt.value instanceof ObservedObject) {continue}
             //if (iOpt.hasOwnProperty('value') && iOpt[k].value instanceof ObservedObject) {continue}
             //if (iOpt[k].hasOwnProperty('value') && v instanceof ObservedObject) {continue}
-            if (v instanceof ObservedObject) {continue}
-            console.log(k, v, iOpt[k].hasOwnProperty('value'), v instanceof ObservedObject, iOpt[k]);
+            //if (v instanceof ObservedObject) {continue}
+            if (([ObservedObject, FixedObject].some(t=>v instanceof t))) {continue}
+
+//            console.log(k, v, iOpt[k].hasOwnProperty('value'), v instanceof ObservedObject, iOpt[k]);
             if (!v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {throw TypeError('valueとtypeは少なくともいずれか一つ必要です。')}
             else if (v.hasOwnProperty('value') && !v.hasOwnProperty('type')) {
                 iOpt[k].type = Typed.getTypeFromValue(v.value);
@@ -1206,7 +1235,8 @@ class ObservedObject {
     }
     #makeDescriptor(k, v) {
         this._.prop[k] = undefined;
-        const isObs = (v instanceof ObservedObject);
+//        const isObs = (v instanceof ObservedObject);
+        const isObs = ([ObservedObject, FixedObject].some(t=>v instanceof t));
         const desc = {
             configurable: false,
             enumerable: true,
@@ -1226,11 +1256,12 @@ class ObservedObject {
             },
         };
         if (!isObs) {// ToDo: 型、妥当性チェックする
-            console.log(v, v.value);
+//            console.log(v, v.value);
             Typed.valid(this._.opt[k].type, v.value);
         }
         //this._.prop[k] = v.value;
-        this._.prop[k] = v instanceof ObservedObject ? v : v.value;
+//        this._.prop[k] = v instanceof ObservedObject ? v : v.value;
+        this._.prop[k] = ([ObservedObject, FixedObject].some(t=>v instanceof t)) ? v : v.value;
         Object.defineProperty(this, k, desc);
     }
     #makeProxy() { return new Proxy(this, {
@@ -1242,7 +1273,7 @@ class ObservedObject {
 
             else if ('setup'===prop) {return this.setup.bind(this);}
             else {
-                console.log(target, prop, receiver);
+//                console.log(target, prop, receiver);
                 if ('symbol'===typeof prop) {return Reflect.get(target, prop)}
                 else {
                     if (target._isProxy) {}
@@ -1251,7 +1282,7 @@ class ObservedObject {
                     return Reflect.get(target, prop);
 //                    return this._.prop[prop];
                 } /* console.log(prop)
-                console.log(this._.prop)
+//                console.log(this._.prop)
                 if (!(prop in this._.prop)) {throw new SyntaxError(`未定義のプロパティを参照しました。:${prop}`)}
                 return this._.prop[prop];
                 */
@@ -1396,7 +1427,7 @@ class Typed {
         || (Symbol===type && 'symbol'!==typeof value)) { throw new TypeError(`'${value}'は期待する${type.name}型ではありません。`) } // プリミティブ型
         //else {// オブジェクト型
         else if ('object'===typeof value) {// オブジェクト型
-            console.log(value, typeof value);
+//            console.log(value, typeof value);
 //            const MSG = `'${value}'は期待する${type.constructor.name}型ではありません。`;
             if (Object===type && '[object Object]'!==value.prototype.toString()) { throw new TypeError(`'${value}'は期待する${type.name}型ではありません。`) } // {k:'v'}
             if ('constructor' in type && !(value instanceof type)) {throw new TypeError(`'${value}'は期待する${type.constructor.name}型ではありません。`)} // クラスやオブジェクトのインスタンス
@@ -1715,6 +1746,8 @@ console.assert(3.14===MATH.PI);
         Integer: Integer,
         Int: Integer,
         I: Integer,
+        RangedBigInteger: RangedBigInteger,
+        RngBigInt: RangedBigInteger,
         NumberDecimal: NumberDecimal,
         NumDec: NumberDecimal,
         IntegerDecimal: IntegerDecimal,
@@ -1768,6 +1801,9 @@ console.assert(3.14===MATH.PI);
         integer:(...args)=>new Integer(...args),
         int:(...args)=>new Integer(...args),
         i:(...args)=>new Integer(...args),
+        rangedBigInteger:(...args)=>new RangedBigInteger(...args),
+        rngBigInt:(...args)=>new RangedBigInteger(...args),
+        rbInt:(...args)=>new RangedBigInteger(...args),
         numberDecimal:(...args)=>new NumberDecimal(...args),
         numDec:(...args)=>new NumberDecimal(...args),
         nDec:(...args)=>new NumberDecimal(...args),
@@ -1778,31 +1814,31 @@ console.assert(3.14===MATH.PI);
 //        ndec:(...args)=>new NumberDecimal(...args),
 //        intdec:(...args)=>new IntegerDecimal(...args),
 //        idec:(...args)=>new IntegerDecimal(...args),
-        i8:(value, min, max)=>new Integer(value, false, 8, min, max),
-        i16:(value, min, max)=>new Integer(value, false, 16, min, max),
-        i32:(value, min, max)=>new Integer(value, false, 32, min, max),
-        i53:(value, min, max)=>new Integer(value, false, 53, min, max),
-        ui8:(value, min, max)=>new Integer(value, true, 8, min, max),
-        ui16:(value, min, max)=>new Integer(value, true, 16, min, max),
-        ui32:(value, min, max)=>new Integer(value, true, 32, min, max),
-        ui53:(value, min, max)=>new Integer(value, true, 53, min, max),
+        i8:(value, min, max)=>new Integer(value, 8, min, max),
+        i16:(value, min, max)=>new Integer(value, 16, min, max),
+        i32:(value, min, max)=>new Integer(value, 32, min, max),
+        i53:(value, min, max)=>new Integer(value, 53, min, max),
+        u8:(value, min, max)=>new UnsignedInteger(value, 8, min, max),
+        u16:(value, min, max)=>new UnsignedInteger(value, 16, min, max),
+        u32:(value, min, max)=>new UnsignedInteger(value, 32, min, max),
+        u53:(value, min, max)=>new UnsignedInteger(value, 53, min, max),
         // 64bit整数が欲しい。BigInt型を使うしかないが計算速度が100倍遅い
-        i64:()=>new RangedBigInteger(value, false, 64n, min, max),
-        i128:()=>new RangedBigInteger(value, false, 128n, min, max),
-        i256:()=>new RangedBigInteger(value, false, 256n, min, max),
-        i512:()=>new RangedBigInteger(value, false, 512n, min, max),
-        i1024:()=>new RangedBigInteger(value, false, 1024n, min, max),
-        i2048:()=>new RangedBigInteger(value, false, 2048n, min, max),
-        i4096:()=>new RangedBigInteger(value, false, 4096n, min, max),
-        i8192:()=>new RangedBigInteger(value, false, 8192n, min, max),
-        ui64:()=>new RangedBigInteger(value, true, 64n, min, max),
-        ui128:()=>new RangedBigInteger(value, true, 128n, min, max),
-        ui256:()=>new RangedBigInteger(value, true, 256n, min, max),
-        ui512:()=>new RangedBigInteger(value, true, 512n, min, max),
-        ui1024:()=>new RangedBigInteger(value, true, 1024n, min, max),
-        ui2048:()=>new RangedBigInteger(value, true, 2048n, min, max),
-        ui4096:()=>new RangedBigInteger(value, true, 4096n, min, max),
-        ui8192:()=>new RangedBigInteger(value, true, 8192n, min, max),
+        i64:(value, min, max)=>new RangedBigInteger(value, false, 64n, min, max),
+        i128:(value, min, max)=>new RangedBigInteger(value, false, 128n, min, max),
+        i256:(value, min, max)=>new RangedBigInteger(value, false, 256n, min, max),
+        i512:(value, min, max)=>new RangedBigInteger(value, false, 512n, min, max),
+        i1024:(value, min, max)=>new RangedBigInteger(value, false, 1024n, min, max),
+        i2048:(value, min, max)=>new RangedBigInteger(value, false, 2048n, min, max),
+        i4096:(value, min, max)=>new RangedBigInteger(value, false, 4096n, min, max),
+        i8192:(value, min, max)=>new RangedBigInteger(value, false, 8192n, min, max),
+        u64:(value, min, max)=>new RangedBigInteger(value, true, 64n, min, max),
+        u128:(value, min, max)=>new RangedBigInteger(value, true, 128n, min, max),
+        u256:(value, min, max)=>new RangedBigInteger(value, true, 256n, min, max),
+        u512:(value, min, max)=>new RangedBigInteger(value, true, 512n, min, max),
+        u1024:(value, min, max)=>new RangedBigInteger(value, true, 1024n, min, max),
+        u2048:(value, min, max)=>new RangedBigInteger(value, true, 2048n, min, max),
+        u4096:(value, min, max)=>new RangedBigInteger(value, true, 4096n, min, max),
+        u8192:(value, min, max)=>new RangedBigInteger(value, true, 8192n, min, max),
         rangedBigInt:(...args)=>new RangedBigInt(...args),
         rngInt:(...args)=>new RangedBigInt(...args),
     },

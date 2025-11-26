@@ -58,7 +58,7 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.t('quant unFin fin flt roundable rounder round halfEven floor trunc ceil int numDec'.split(' ').every(n=>'function'===typeof Obs.T[n]))
     a.t('q f i'.split(' ').every(n=>'function'===typeof Obs.T[n]))
     //a.t('8 16 32 53 64 128 256 512 1024 2048 4096 8192'.split(' ').every(n=>'function'===typeof Obs.T[`i${n}`]))
-    a.t('8 16 32 53 64 128 256 512 1024 2048 4096 8192'.split(' ').every(b=>['','u'].every(p=>'function'===typeof Obs.T[`${p}i${b}`])));
+    a.t('8 16 32 53 64 128 256 512 1024 2048 4096 8192'.split(' ').every(b=>['i','u'].every(p=>'function'===typeof Obs.T[`${p}${b}`])));
 
     // 上記丸め間違いを正すために実装したのがNumberRounder。
     console.log(Obs.U.NumberRounder.round(0.5, 0));
@@ -1164,24 +1164,379 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const v = Obs.T.aint(0, false, true, bit);
         return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && (2**bit-1)===v.max && bit===v.bit;
     });
-    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 54));
-    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。`, ()=>Obs.T.aint(0, false, true, 0.1));
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。:bit:54`, ()=>Obs.T.aint(0, false, true, 54));
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。:bit:0.1`, ()=>Obs.T.aint(0, false, true, 0.1));
     a.t(()=>{
         const v = Obs.T.aint(3, false, true, 0, 2, 8);
         return v instanceof Obs.C.AllInteger && 3===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 2===v.min && 8===v.max && 0===v.bit;
     });
-        const v = Obs.T.aint(3, false, true, 1, 2, 8);
+    //a.e(RangeError, `minがunsafed,unsigned,bitで指定した範囲外です。min:2,unsafed:false,unsigned:true,bit:1 = 0`, ()=>Obs.T.aint(3, false, true, 1, 2, 8));
+    a.e(RangeError, `maxがunsafed,unsigned,bitで指定した範囲外です。max:8,unsafed:false,unsigned:true,bit:1 = 1`, ()=>Obs.T.aint(3, false, true, 1, 2, 8));
+    //a.e(RangeError, `minがunsafed,unsigned,bitで指定した範囲外です。min:1,unsafed:false,unsigned:true,bit:1 = 0`, ()=>Obs.T.aint(3, false, true, 1, 1, 8));
+    a.e(RangeError, `maxがunsafed,unsigned,bitで指定した範囲外です。max:8,unsafed:false,unsigned:true,bit:1 = 1`, ()=>Obs.T.aint(3, false, true, 1, 1, 8));
+    a.e(RangeError, `maxがunsafed,unsigned,bitで指定した範囲外です。max:8,unsafed:false,unsigned:true,bit:1 = 1`, ()=>Obs.T.aint(3, false, true, 1, 0, 8));
+    a.e(RangeError, `maxがunsafed,unsigned,bitで指定した範囲外です。max:2,unsafed:false,unsigned:true,bit:1 = 1`, ()=>Obs.T.aint(3, false, true, 1, 0, 2));
+
+    a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:2,1`, ()=>Obs.T.aint(3, false, true, 1, 2, 1));
+    a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:1,1`, ()=>Obs.T.aint(3, false, true, 1, 1, 1));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:3, min:0, max:1`, ()=>Obs.T.aint(3, false, true, 1, 0, 1));
+    a.e(RangeError, `minがunsafed,unsigned,bitで指定した範囲外です。min:-1,unsafed:false,unsigned:true,bit:1 = 0`, ()=>Obs.T.aint(3, false, true, 1, -1, 1));
+
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:2, min:0, max:1`, ()=>Obs.T.aint(2, false, true, 1, 0, 1));
     a.t(()=>{
-        const v = Obs.T.aint(3, false, true, 1, 2, 8);
-        return v instanceof Obs.C.AllInteger && 3===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 2===v.min && 8===v.max && 0===v.bit;
+        const v = Obs.T.aint(0, false, true, 1, 0, 1);
+        return v instanceof Obs.C.AllInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 1===v.max && 1===v.bit;
     });
-    // Int系は引数が少ないため{}options引数を使わないこととする
+    // Int系は引数が少ないため{}options引数を使わないこととする。AllIntでなく省略形ui8等の使用を推奨する。
     /*
     a.t(()=>{
         const v = Obs.T.aint({value:123});
         return v instanceof Obs.C.AllInteger && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
     });
     */
+
+    // Integer
+    a.t(()=>{
+        const v = Obs.T.int();
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.int(123);
+        return v instanceof Obs.C.Integer && 123===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.int(Number.MIN_SAFE_INTEGER-1));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.int(Number.MAX_SAFE_INTEGER+1));
+    a.t(()=>{
+        const v = Obs.T.int(Number.MIN_SAFE_INTEGER);
+        return v instanceof Obs.C.Integer && Number.MIN_SAFE_INTEGER===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.int(Number.MAX_SAFE_INTEGER);
+        return v instanceof Obs.C.Integer && Number.MAX_SAFE_INTEGER===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。:bit:-1`, ()=>Obs.T.int(0, -1));
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。:bit:54`, ()=>Obs.T.int(0, 54));
+    a.t(()=>{
+        const v = Obs.T.int(0, 0);
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && Number.MIN_SAFE_INTEGER===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.int(0, 1);
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -1===v.min && 0===v.max && 1===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.int(0, 53);
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -4503599627370496===v.min && 4503599627370495===v.max && 53===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:1, min:2, max:8`, ()=>Obs.T.int(1, 53, 2, 8));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:9, min:2, max:8`, ()=>Obs.T.int(9, 53, 2, 8));
+    a.t(()=>{
+        const v = Obs.T.int(3, 53, 2, 8);
+        return v instanceof Obs.C.Integer && 3===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && 2===v.min && 8===v.max && 53===v.bit;
+    });
+
+    // UnsignedInteger
+    a.t(()=>{
+        const v = Obs.T.uint();
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.uint(123);
+        return v instanceof Obs.C.UnsignedInteger && 123===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.uint(Number.MIN_SAFE_INTEGER-1));
+    a.e(TypeError, `非安全な整数値は許可されておらず代入できません。unsafed=trueにしてください。`, ()=>Obs.T.uint(Number.MAX_SAFE_INTEGER+1));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-9007199254740991, min:0, max:9007199254740991`, ()=>Obs.T.uint(Number.MIN_SAFE_INTEGER));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:9007199254740991`, ()=>Obs.T.uint(-1));
+    a.t(()=>{
+        const v = Obs.T.uint(0);
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.uint(Number.MAX_SAFE_INTEGER);
+        return v instanceof Obs.C.UnsignedInteger && Number.MAX_SAFE_INTEGER===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。:bit:-1`, ()=>Obs.T.uint(0, -1));
+    a.e(TypeError, `bitは0〜53までのNumber型整数値であるべきです。:bit:54`, ()=>Obs.T.uint(0, 54));
+    a.t(()=>{
+        const v = Obs.T.uint(0, 0);
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && Number.MAX_SAFE_INTEGER===v.max && 0===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.uint(0, 1);
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 1===v.max && 1===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.uint(0, 53);
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && Number.MAX_SAFE_INTEGER===v.max && 53===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:1, min:2, max:8`, ()=>Obs.T.uint(1, 53, 2, 8));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:9, min:2, max:8`, ()=>Obs.T.uint(9, 53, 2, 8));
+    a.t(()=>{
+        const v = Obs.T.uint(3, 53, 2, 8);
+        return v instanceof Obs.C.UnsignedInteger && 3===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 2===v.min && 8===v.max && 53===v.bit;
+    });
+
+    // RangedBigInteger
+    a.t(()=>{
+        const v = Obs.T.rbInt();
+        return v instanceof Obs.C.RangedBigInteger && 0n===v.value && !v.unsigned && 64n===v.bit && -9223372036854775808n===v.min && 9223372036854775807n===v.max;
+    });
+    a.e(TypeError, `valueはBigInt型リテラル値であるべきです。:1`, ()=>Obs.T.rbInt(1));
+    a.t(()=>{
+        const v = Obs.T.rbInt(1n);
+        return v instanceof Obs.C.RangedBigInteger && 1n===v.value && !v.unsigned && 64n===v.bit && -9223372036854775808n===v.min && 9223372036854775807n===v.max;
+    });
+    a.t(()=>{
+        const v = Obs.T.rbInt(-1n);
+        return v instanceof Obs.C.RangedBigInteger && -1n===v.value && !v.unsigned && 64n===v.bit && -9223372036854775808n===v.min && 9223372036854775807n===v.max;
+    });
+    a.t(()=>{
+        const v = Obs.T.rbInt(-1n, false);
+        return v instanceof Obs.C.RangedBigInteger && -1n===v.value && !v.unsigned && 64n===v.bit && -9223372036854775808n===v.min && 9223372036854775807n===v.max;
+    });
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:9223372036854775808, min:-9223372036854775808, max:9223372036854775807`, ()=>Obs.T.rbInt(9223372036854775808n));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:-9223372036854775809, min:-9223372036854775808, max:9223372036854775807`, ()=>Obs.T.rbInt(-9223372036854775809n));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:-1, min:0, max:18446744073709551615`, ()=>Obs.T.rbInt(-1n, true));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:18446744073709551616, min:0, max:18446744073709551615`, ()=>Obs.T.rbInt(18446744073709551616n, true));
+    a.t(()=>{
+        const v = Obs.T.rbInt(0n, true);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 0n===v.value &&  v.unsigned && 64n===v.bit && 0n===v.min && 18446744073709551615n===v.max;
+    });
+    a.e(TypeError, `unsignedはBoolean型リテラル値であるべきです。:53`, ()=>Obs.T.rbInt(1n, 53));
+    a.e(TypeError, `bitがNumber型なら53より大きくNumber.isSafeInteger()な値であるべきです。53以下ならNumber継承整数型Integerを使用してください。53`, ()=>Obs.T.rbInt(1n, false, 53));
+    a.e(TypeError, `bitがNumber型なら53より大きくNumber.isSafeInteger()な値であるべきです。53以下ならNumber継承整数型Integerを使用してください。53`, ()=>Obs.T.rbInt(1n, true, 53));
+    a.t(()=>{
+        const v = Obs.T.rbInt(-1n, false, 64, -10n, 10n);
+        return v instanceof Obs.C.RangedBigInteger && -1n===v.value && !v.unsigned && 64n===v.bit && -10n===v.min && 10n===v.max;
+    });
+    a.t(()=>{
+        const v = Obs.T.rbInt(-1n, false, 128);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -1n===v.value && !v.unsigned && 128n===v.bit && -170141183460469231731687303715884105728n===v.min && 170141183460469231731687303715884105727n===v.max;
+    });
+
+    // ui8等のInt省略形
+    a.t(()=>{
+        const v = Obs.T.i8();
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -128===v.min && 127===v.max && 8===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i8(-128);
+        return v instanceof Obs.C.Integer && -128===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -128===v.min && 127===v.max && 8===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i8(127);
+        return v instanceof Obs.C.Integer && 127===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -128===v.min && 127===v.max && 8===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-129, min:-128, max:127`, ()=>Obs.T.i8(-129));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:128, min:-128, max:127`, ()=>Obs.T.i8(128));
+    a.e(RangeError, `minがunsafed,unsigned,bitで指定した範囲外です。min:-129,unsafed:false,unsigned:false,bit:8 = -128`, ()=>Obs.T.i8(0, -129));
+    a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:128,127`, ()=>Obs.T.i8(0, 128));
+    a.e(RangeError, `maxがunsafed,unsigned,bitで指定した範囲外です。max:128,unsafed:false,unsigned:false,bit:8 = 127`, ()=>Obs.T.i8(0, -128, 128));
+    a.t(()=>{
+        const v = Obs.T.i8(0, 0, 1);
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && 0===v.min && 1===v.max && 8===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:2, min:0, max:1`, ()=>{
+        const v = Obs.T.i8(0, 0, 1);
+        v.value = 2;
+    });
+    a.t(()=>{
+        const v = Obs.T.i8(0, 0, 1);
+        v.value = 1;
+        return v instanceof Obs.C.Integer && 1===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && 0===v.min && 1===v.max && 8===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i16();
+        console.log(v);
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -32768===v.min && 32767===v.max && 16===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i32();
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -2147483648===v.min && 2147483647===v.max && 32===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i53();
+        console.log(v);
+        return v instanceof Obs.C.Integer && 0===v.value && !v.naned && !v.infinited && !v.unsafed && !v.unsigned && -4503599627370496===v.min && 4503599627370495===v.max && 53===v.bit;
+    });
+
+    // unsigned系int
+    a.t(()=>{
+        const v = Obs.T.u8();
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 255===v.max && 8===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u8(0);
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 255===v.max && 8===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u8(255);
+        return v instanceof Obs.C.UnsignedInteger && 255===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 255===v.max && 8===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:-1, min:0, max:255`, ()=>Obs.T.u8(-1));
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:256, min:0, max:255`, ()=>Obs.T.u8(256));
+    a.e(RangeError, `minがunsafed,unsigned,bitで指定した範囲外です。min:-1,unsafed:false,unsigned:true,bit:8 = 0`, ()=>Obs.T.u8(0, -1));
+    a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:256,255`, ()=>Obs.T.u8(0, 256));
+    a.e(RangeError, `minがunsafed,unsigned,bitで指定した範囲外です。min:-1,unsafed:false,unsigned:true,bit:8 = 0`, ()=>Obs.T.u8(0, -1, 256));
+    a.e(RangeError, `maxがunsafed,unsigned,bitで指定した範囲外です。max:256,unsafed:false,unsigned:true,bit:8 = 255`, ()=>Obs.T.u8(0, 0, 256));
+    a.t(()=>{
+        const v = Obs.T.u8(0, 0, 1);
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 1===v.max && 8===v.bit;
+    });
+    a.e(RangeError, `valueがmin〜maxの範囲を超過しています。:value:2, min:0, max:1`, ()=>{
+        const v = Obs.T.u8(0, 0, 1);
+        v.value = 2;
+    });
+    a.t(()=>{
+        const v = Obs.T.u8(0, 0, 1);
+        v.value = 1;
+        return v instanceof Obs.C.UnsignedInteger && 1===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 1===v.max && 8===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u16();
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 65535===v.max && 16===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u32();
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 4294967295===v.max && 32===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u53();
+        console.log(v);
+        return v instanceof Obs.C.UnsignedInteger && 0===v.value && !v.naned && !v.infinited && !v.unsafed &&  v.unsigned && 0===v.min && 9007199254740991===v.max && 53===v.bit;
+    });
+
+    // RangedBigInteger省略形
+    a.t(()=>{
+        const v = Obs.T.i64();
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 0n===v.value && !v.unsigned && -9223372036854775808n===v.min && 9223372036854775807n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i64(0n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 0n===v.value && !v.unsigned && -9223372036854775808n===v.min && 9223372036854775807n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i64(1n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 1n===v.value && !v.unsigned && -9223372036854775808n===v.min && 9223372036854775807n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i64(-1n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -1n===v.value && !v.unsigned && -9223372036854775808n===v.min && 9223372036854775807n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i64(-9223372036854775808n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -9223372036854775808n===v.value && !v.unsigned && -9223372036854775808n===v.min && 9223372036854775807n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.i64(9223372036854775807n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 9223372036854775807n===v.value && !v.unsigned && -9223372036854775808n===v.min && 9223372036854775807n===v.max && 64n===v.bit;
+    });
+    a.e(TypeError, `valueはBigInt型リテラル値であるべきです。:0`, ()=>Obs.T.i64(0));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:-9223372036854775809, min:-9223372036854775808, max:9223372036854775807`, ()=>Obs.T.i64(-9223372036854775809n));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:9223372036854775808, min:-9223372036854775808, max:9223372036854775807`, ()=>Obs.T.i64(9223372036854775808n));
+    a.e(RangeError, `minがunsigned,bitで指定した範囲外です。min:-9223372036854775809,unsigned:false,bit:64 = -9223372036854775808`, ()=>Obs.T.i64(0n, -9223372036854775809n));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:0, min:256, max:9223372036854775807`, ()=>Obs.T.i64(0n, 256n));
+    a.e(RangeError, `minがunsigned,bitで指定した範囲外です。min:-9223372036854775809,unsigned:false,bit:64 = -9223372036854775808`, ()=>Obs.T.i64(0n, -9223372036854775809n, 256n));
+    a.e(RangeError, `maxがunsigned,bitで指定した範囲外です。max:9223372036854775808,unsigned:false,bit:64 = 9223372036854775807`, ()=>Obs.T.i64(0n, -9223372036854775808n, 9223372036854775808n));
+    a.t(()=>{
+        const v = Obs.T.i64(-1n, -10n, 10n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -1n===v.value && !v.unsigned && -10n===v.min && 10n===v.max && 64n===v.bit;
+    });
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:-11, min:-10, max:10`, ()=>{
+        const v = Obs.T.i64(-1n, -10n, 10n);
+        v.value = -11n;
+    });
+    a.t(()=>{
+        const v = Obs.T.i64(-1n, -10n, 10n);
+        v.value = -9n;
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -9n===v.value && !v.unsigned && -10n===v.min && 10n===v.max && 64n===v.bit;
+    });
+
+
+
+    // u64
+    a.t(()=>{
+        const v = Obs.T.u64();
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 0n===v.value &&  v.unsigned && 0n===v.min && 18446744073709551615n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u64(0n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 0n===v.value &&  v.unsigned && 0n===v.min && 18446744073709551615n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u64(1n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 1n===v.value &&  v.unsigned && 0n===v.min && 18446744073709551615n===v.max && 64n===v.bit;
+    });
+    /*
+    a.t(()=>{
+        const v = Obs.T.u64(-1n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -1n===v.value &&  v.unsigned && 0n===v.min && 18446744073709551615n===v.max && 64n===v.bit;
+    });
+    a.t(()=>{
+        const v = Obs.T.u64(-9223372036854775808n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -9223372036854775808n===v.value &&  v.unsigned && 0n===v.min && 18446744073709551615n===v.max && 64n===v.bit;
+    });
+    */
+    a.t(()=>{
+        const v = Obs.T.u64(18446744073709551615n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 18446744073709551615n===v.value &&  v.unsigned && 0n===v.min && 18446744073709551615n===v.max && 64n===v.bit;
+    });
+    a.e(TypeError, `valueはBigInt型リテラル値であるべきです。:0`, ()=>Obs.T.u64(0));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:-1, min:0, max:18446744073709551615`, ()=>Obs.T.u64(-1n));
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:18446744073709551616, min:0, max:18446744073709551615`, ()=>Obs.T.u64(18446744073709551616n));
+    a.e(RangeError, `minがunsigned,bitで指定した範囲外です。min:-1,unsigned:true,bit:64 = 0`, ()=>Obs.T.u64(0n, -1n));
+    a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:18446744073709551615,18446744073709551615`, ()=>Obs.T.u64(0n, 18446744073709551615n));
+    a.e(RangeError, `minとmaxが不正です。両者は異なる値にしつつ大小関係を名前と一致させてください。:18446744073709551616,18446744073709551615`, ()=>Obs.T.u64(0n, 18446744073709551616n));
+    a.e(RangeError, `minがunsigned,bitで指定した範囲外です。min:-9223372036854775809,unsigned:true,bit:64 = 0`, ()=>Obs.T.u64(0n, -9223372036854775809n, 256n));
+    //a.e(RangeError, `maxがunsigned,bitで指定した範囲外です。max:9223372036854775808,unsigned:false,bit:64 = 9223372036854775807`, ()=>Obs.T.u64(0n, -9223372036854775808n, 9223372036854775808n));
+    a.e(RangeError, `maxがunsigned,bitで指定した範囲外です。max:18446744073709551616,unsigned:true,bit:64 = 18446744073709551615`, ()=>Obs.T.u64(0n, 0n, 18446744073709551616n));
+    a.e(RangeError, `minがunsigned,bitで指定した範囲外です。min:-10,unsigned:true,bit:64 = 0`, ()=>Obs.T.u64(-1n, -10n, 10n));
+    a.t(()=>{
+        const v = Obs.T.u64(6n, 5n, 10n);
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 6n===v.value &&  v.unsigned && 5n===v.min && 10n===v.max && 64n===v.bit;
+    });
+    /*
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:-11, min:-10, max:10`, ()=>{
+        const v = Obs.T.u64(-1n, -10n, 10n);
+        v.value = -11n;
+    });
+
+    a.t(()=>{
+        const v = Obs.T.u64(-1n, -10n, 10n);
+        v.value = -9n;
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && -9n===v.value &&  v.unsigned && -10n===v.min && 10n===v.max && 64n===v.bit;
+    });
+    */
+    a.e(RangeError, `valueはmin〜maxの範囲外です。:value:4, min:5, max:10`, ()=>{
+        const v = Obs.T.u64(5n, 5n, 10n);
+        v.value = 4n;
+    });
+    a.t(()=>{
+        const v = Obs.T.u64(5n, 5n, 10n);
+        v.value = 6n;
+        console.log(v);
+        return v instanceof Obs.C.RangedBigInteger && 6n===v.value &&  v.unsigned && 5n===v.min && 10n===v.max && 64n===v.bit;
+    });
+    // Base64系
 
 
 
