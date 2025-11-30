@@ -1048,24 +1048,54 @@ class BaseCharBuilder {// 2〜64, 256
     get sortable() {return this._.sortable}
     get chars() {return this._.chars}
 }
-
-
+class BaseFactory {
+    static get names() {return 'b16 b32 b32h b64 b64u b64h b256'.split(' ')}
+    static get(name='b64u') {
+        switch (name) {
+            case 'b16': return new Base16();
+            case 'b32': return new Base32('ABCDEFGHIJKLMNOPQRSTUVWXYZ234567');
+            case 'b32h': return new Base32('0123456789ABCDEFGHIJKLMNOPQRSTUV');
+            case 'b64': return new Base64();
+            case 'b64u': return new Base64URL();
+            case 'b64h': return new Base64Hex();
+            case 'b256': return new Base256();
+            default: throw new TypeError(`nameが不正値です。次のいずれかのみ有効です。:${this.names}`);
+        }
+    }
+}
 class BaseX {
-    static encodeStr(str) {return this.encode((new TextEncoder()).encode(str))}
-    static decodeStr(str) {return (new TextDecoder()).decode(this.decode(str));}
+//    constructor(chars, hasPad, sortable) {
+//        this._ = {chars:{en:null, de:null}, hasPad:hasPad, ignoreCase:ignoreCase, sortable:sortable};
+//    }
+    encodeStr(str) {return this.encode((new TextEncoder()).encode(str))}
+    decodeStr(str) {return (new TextDecoder()).decode(this.decode(str));}
+    async compress(data, format='deflate-raw') { // format:gzip/deflate/deflate-raw
+        const is = new Blob([data]).stream();
+        const os = is.pipeThrough(new CompressionStream(format));
+        return await new Response(os).arrayBuffer();
+    }
+    async decompress(data, format='deflate-raw') {
+        const is = new Blob([data]).stream();
+        const os = is.pipeThrough(new DecompressionStream(format));
+        return await new Response(os).arrayBuffer();
+    }
+    async encodeAsync(u8a,format='deflate-raw') {return this.encode(await this.compress(u8a,format))}
+    async decodeAsync(str,format='deflate-raw') {return await this.decompress(this.decode(str),format)}
+    async encodeStrAsync(str,format='deflate-raw') {return this.encodeStr(await this.compress((new TextEncoder()).encode(str),format))}
+    async decodeStrAsync(str,format='deflate-raw') {return await this.decompress((new TextDecoder()).decode(str),format)}
 }
 class Base16 extends BaseX {
-    static encode(u8a) {
+    encode(u8a) {
         if (!(u8a instanceof Uint8Array)) {throw new TypeError(`引数はUint8Array型インスタンスであるべきです。`)}
         let str = '';
         for (let byte of u8a) {str += byte.toString(16).padStart(2, '0')}
         return str;
     }
-    static decode(str) {
+    decode(str) {
         if (!('string'===typeof str && 0 === str.length % 2)) {throw new TypeError('引数Base16の文字数は偶数であるべきです。')}
         const u8a = new Uint8Array(str.length / 2);
         for (let i = 0; i<str.length; i+=2) {u8a[i/2] = parseInt(str.substring(i, i+2), 16)}// 2文字を16進数として解析し、バイト値を取得
-        return arrayBuffer;
+        return u8a;
     }
 }
 class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e00d32731ca4
@@ -1226,10 +1256,11 @@ class Base64Base extends BaseX {
     static #NUMBER = '0123456789';
     static #ALPHABET_U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     static #ALPHABET_L = 'abcdefghijklmnopqrstuvwxyz';
-    constructor(sortable, symbols=['+','/']) {
+    constructor(hasPad, sortable, symbols=['+','/']) {
+        if ('boolean'!==typeof hasPad) {throw new TypeError(`hasPadはBoolean型プリミティブ値であるべきです。`)}
         if ('boolean'!==typeof sortable) {throw new TypeError(`sortableはBoolean型プリミティブ値であるべきです。`)}
         if (Array.isArray(symbols) && 2===symbols.length && symbols.every(v=>'string'===typeof v && 1===v.length)) {throw new TypeError(`symbolsは1字を2個含む配列であるべきです。`)}
-        this._ = {chars:{en:null, de:null}, sortable:sortable, symbols:symbols};
+        this._ = {chars:{en:null, de:null}, hasPad:hasPad, sortable:sortable, symbols:symbols};
         this._.chars.en = sortable
             ? Base64Base.#NUMBER + Base64Base.#ALPHABET_U + Base64Base.#ALPHABET_L + symbols.join('')
             : Base64Base.#ALPHABET_U + Base64Base.#ALPHABET_L + Base64Base.#NUMBER + symbols.join('');
@@ -1237,15 +1268,18 @@ class Base64Base extends BaseX {
 //            : BaseChars.ALPHABET_U + BaseChars.ALPHABET_L + BaseChars.NUMBER + symbols.join('');
         this._.chars.de = Object.fromEntries(Object.entries(this._.chars.en).map(([i,c]) => [c,i]));
     }
-    static encode(u8a) {
+    encode(u8a) {
         const s = btoa(String.fromCharCode.apply(null, u8a));
+//        return this.#fromBasic(s);
 //        return this.#isBasic ? s : s.replaceAll('+', this._.symbols[0]).replaceAll('/', this._.symbols[1]);
-        return this.#fromBasic(s);
+        const t = this.#fromBasic(s);
+        return this._.hasPad ? t : this.#delPad(t);
     }
-    static encode(u8a) {return btoa(String.fromCharCode.apply(null, u8a))}
-    static decode(str) {
+//    static encode(u8a) {return btoa(String.fromCharCode.apply(null, u8a))}
+    decode(str) {
 //        if (this.#isBasic) {str = str.replaceAll(this._.symbols[0], '+').replaceAll(this._.symbols[1], '/')}
         str = this.#toBasic(str);
+        if (!this._.hasPad) {str = this.#addPad(str)}
         const decodedString = atob(str);
         const u8a = new Uint8Array(decodedString.length);
         for (let i=0; i<decodedString.length; i++) {
@@ -1256,10 +1290,87 @@ class Base64Base extends BaseX {
     get #isBasic() {return '+'===this._.symbols[0] && '/'===this._.symbols[1]}
     #toBasic(str) {return this.#isBasic ? str.replaceAll(this._.symbols[0], '+').replaceAll(this._.symbols[1], '/') : s;}// 基本形に変換する
     #fromBasic(str) {return this.#isBasic ? s : s.replaceAll('+', this._.symbols[0]).replaceAll('/', this._.symbols[1]);}// 基本形から自身の形に変換する
+    #addPad(str) {
+        if (str.endsWith('=')) {return base64str}
+        const paddingNeeded = (4 - (str.length % 4)) % 4;
+        return str + '='.repeat(paddingNeeded);
+    }
+    #delPad(str) {return str.replaceAll('=','')}
 }
-class Base64 extends Base64Base {constructor(){super(false, ['+','/'])}}
-class Base64URL extends Base64Base {constructor(){super(false, ['-','_'])}}
-class Base64Hex extends Base64Base {constructor(){super(true, ['{','}'])}}
+//class Base64 extends Base64Base {constructor(){super(true, false, ['+','/'])}}
+//class Base64URL extends Base64Base {constructor(){super(false, false, ['-','_'])}}
+//class Base64Hex extends Base64Base {constructor(){super(false, true, ['{','}'])}}
+
+class Base64 extends Base64Base {
+    static #CHARS = {
+        B: Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'),
+        H: Array.from('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}'),
+    };
+    constructor(){super(true, false, ['+','/'])}
+    toURL(data) {
+        if ('string'===typeof data) {return this.#toURL(data)}
+        else if (data instanceof Uint8Array) {return this.#toURL(this.encode(data))}
+        else {this.#throw()}
+    }
+    #toURL(s) {return data.replaceAll('+','-').replaceAll('/','_')}
+    toHex(data) {
+        if ('string'===typeof data) {return this.#toHex(data)}
+        else if (data instanceof Uint8Array) {return this.#toHex(this.encode(data))}
+        else {this.#throw()}
+    }
+    #toHex(s) {return Array.from(data).rduce((s,v,i)=>s+Base64.CHARS.H[Base64.CHARS.B.indexOf(v)], '')}
+    async toURLAsync(data) {
+        if ('string'===typeof data) {return this.#toURL(data)}
+        else if (data instanceof Uint8Array) {return this.#toURL(await this.encodeAsync(data))}
+        else {this.#throw()}
+    }
+    async toHexAsync(data) {
+        if ('string'===typeof data) {return this.#toHex(data)}
+        else if (data instanceof Uint8Array) {return this.#toHex(await this.encodeAsync(data))}
+        else {this.#throw()}
+    }
+    #throw() {throw new TypeError(`引数はstring型プリミティブ値かUint8Array型インスタンスであるべきです。`)}
+//    async encodeAsync(u8a,format='deflate-raw') {return this.encode(await this.compress(u8a,format))}
+//    async decodeAsync(str,format='deflate-raw') {return await this.decompress(this.decode(str),format)}
+//    async encodeStrAsync(str,format='deflate-raw') {return this.encodeStr(await this.compress((new TextEncoder()).encode(str),format))}
+//    async decodeStrAsync(str,format='deflate-raw') {return await this.decompress((new TextDecoder()).decode(str),format)}
+}
+class SameBaseChanger {// 基数が同一のBaseNパターンを変換する
+    static symbol(s, from=['+','/'], to=['-','_']) {return s.replaceAll(from[0],to[0]).replaceAll(from[1],to[1])}
+    static all(s, from='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'.split(''), to='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}'.split('')) {return Array.from(s).rduce((s,v,i)=>s+to[from.indexOf(v)], '')}
+}
+// 後ろ二つだけ違うパターン: SameBaseChanger.symbol(s, from, to)
+// 順序入替パターン: SameBaseChanger.all(s, from, to)
+class Base64URL extends Base64Base {
+    constructor(){super(false, false, ['-','_'])}
+    toBase(data) {
+        if ('string'===typeof data) {return this.#toBase(data)}
+        else if (data instanceof Uint8Array) {return this.#toBase(this.encode(data))}
+        else {this.#throw()}
+    }
+    #toBase(s) {return data.replaceAll('-','+').replaceAll('_','/')}
+//    #toBase(s) {return SameBaseChanger.symbol(data, ['-','_'], ['+','/'])}
+    toHex(data) {
+        if ('string'===typeof data) {return this.#toHex(data)}
+        else if (data instanceof Uint8Array) {return this.#toHex(this.encode(data))}
+        else {this.#throw()}
+    }
+    #toHex(s) {return Array.from(data).rduce((s,v,i)=>s+Base64.CHARS.H[Base64.CHARS.B.indexOf(v)], '')}
+    async toBaseAsync(data) {
+        if ('string'===typeof data) {return this.#toBase(data)}
+        else if (data instanceof Uint8Array) {return this.#toBase(await this.encodeAsync(data))}
+        else {this.#throw()}
+    }
+    async toHexAsync(data) {
+        if ('string'===typeof data) {return this.#toHex(data)}
+        else if (data instanceof Uint8Array) {return this.#toHex(await this.encodeAsync(data))}
+        else {this.#throw()}
+    }
+    #throw() {throw new TypeError(`引数はstring型プリミティブ値かUint8Array型インスタンスであるべきです。`)}
+
+}
+class Base64Hex extends Base64Base {constructor(){super(false, true, ['{','}'])}}
+
 class Base256 extends BaseX {
     static #CHAR = (
         '⠀⢀⠠⢠⠐⢐⠰⢰⠈⢈⠨⢨⠘⢘⠸⢸' +
@@ -1498,6 +1609,7 @@ console.assert(3.14===MATH.PI);
     },
     U: {// Utility
         NumberRounder: NumberRounder,
+        Base: BaseFactory,
     }
 }, {
     get:(target, prop, receiver)=>{

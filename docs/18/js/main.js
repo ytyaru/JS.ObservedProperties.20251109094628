@@ -1358,7 +1358,21 @@ window.addEventListener('DOMContentLoaded', (event) => {
         console.log(v);
         return v instanceof Obs.C.RangedBigInteger && 6n===v.value &&  v.unsigned && 5n===v.min && 10n===v.max && 64n===v.bit;
     });
+
     // Base64系
+    a.t(()=>{
+        const b = Obs.U.Base.get('b16');
+        const buffer = b.decode('ff');
+        const base16 = b.encode(buffer);
+        return 'ff'===base16;
+    });
+    a.t(()=>{
+        const b = Obs.U.Base.get('b16');
+        const base16 = b.encode(new Uint8Array([0xff]));
+        const buffer = b.decode(base16);
+        return 1===buffer.length && 0xff===buffer[0];
+    });
+
 
 
 
