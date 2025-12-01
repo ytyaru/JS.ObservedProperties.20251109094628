@@ -1359,6 +1359,77 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return v instanceof Obs.C.RangedBigInteger && 6n===v.value &&  v.unsigned && 5n===v.min && 10n===v.max && 64n===v.bit;
     });
 
+    // Base系      数値とBase文字の相互変換: radixPrefix=2:0b, 8:0o, 16:0x, 32:0v, 36:0z, 64:0_, 256:0B  
+    //             UTF8とBase文字の相互変換: utf8:, utf16le:, utf16be:, utf32:
+    //         バイナリとBase文字の相互変換: b16:, b32, b32h, b64, b64u, b64h, b256
+    //     圧縮バイナリとBase文字の相互変換: b16d:, b32d, b32hd, b64d, b64ud, b64hd, b256d
+    // 圧縮バイナリと圧縮Base文字の相互変換: b16D:, b32D, b32hD, b64D, b64uD, b64hD, b256D
+    // toBase(), toBin(), toNum(), toInt()
+    /*
+    a.t(()=>{
+        const b = Obs.U.Base.from('0b:11111111');
+        const buffer = b.decode();
+        return 1===buffer.length && 0xFF===buffer[0];
+    });
+    a.t(()=>{
+        const b = Obs.U.Base.from(new Uint8Array([0xFF]), '0b');
+        const str = b.encode();
+        return '0b:11111111'===str && '0b'===b.prefix && '11111111'===b.body;
+    });
+    a.t(()=>{
+        const b = Obs.U.Base.from('0b:11111111');
+        b.to('0o'); // 0b,0o,0x,0v,0z,0_,0B,b16,b32,b32h,b64u,b64h,b256
+    });
+    */
+
+    // SortableBase64（）
+    a.t(()=>{
+        const b = new Obs.U.SortBase();
+        return 64===b.radix && null===b.bin && null===b.str && null===b.int && null===b.num;
+    });
+    a.t(()=>{// radix:2〜64
+        const rangedArray = (end, start = 0, step = 1) => {
+            const length = Math.ceil((end - start + 1) / step);
+            return Array.from({length},(_, i)=>i*step+start);
+        };
+        for (let radix of rangedArray(64,2)) {
+            const b = new Obs.U.SortBase(radix);
+            return radix===b.radix && null===b.bin && null===b.str && null===b.int && null===b.num;
+        }
+    });
+    a.e(TypeError, `radixは2〜64のNumber型整数値であるべきです。`, ()=>new Obs.U.SortBase(1));
+    a.e(TypeError, `radixは2〜64のNumber型整数値であるべきです。`, ()=>new Obs.U.SortBase(65));
+    a.e(TypeError, `radixは2〜64のNumber型整数値であるべきです。`, ()=>new Obs.U.SortBase('64'));
+    a.e(TypeError, `radixは2〜64のNumber型整数値であるべきです。`, ()=>new Obs.U.SortBase(64n));
+    a.t(()=>{
+        const b = new Obs.U.SortBase();
+        b.num = 0;
+        console.log(64===b.radix, 0===b.bin.length, ''===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 0===b.bin[0] && '0'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase();
+        b.num = 1;
+        console.log(64===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase();
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase();
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase();
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 7===b.bin.length && 31===b.bin[0]  && 255===b.bin[1] && 'V}}}}}}}}'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+
     // Base64系
     a.t(()=>{
         const b = Obs.U.Base.get('b16');
@@ -1372,7 +1443,14 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const buffer = b.decode(base16);
         return 1===buffer.length && 0xff===buffer[0];
     });
-
+    a.e(TypeError, `引数Base16の文字数は偶数であるべきです。`, ()=>{
+        const b = Obs.U.Base.get('b16');
+        const buffer = b.decode('g');
+    });
+    a.e(TypeError, `不正なBase16文字です。:gg`, ()=>{
+        const b = Obs.U.Base.get('b16');
+        const buffer = b.decode('gg');
+    });
 
 
 

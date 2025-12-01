@@ -1063,10 +1063,41 @@ class BaseFactory {
         }
     }
 }
+class Compresser {
+    async compress(data, format='deflate-raw') { // format:gzip/deflate/deflate-raw
+        const is = new Blob([data]).stream();
+        const os = is.pipeThrough(new CompressionStream(format));
+        return await new Response(os).arrayBuffer();
+    }
+    async decompress(data, format='deflate-raw') {
+        const is = new Blob([data]).stream();
+        const os = is.pipeThrough(new DecompressionStream(format));
+        return await new Response(os).arrayBuffer();
+    }
+}
+class BaseN {
+    constructor(radix=64, enChars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', ignoreCase=false, hasPad=true, sortable=false, deflateNum=0) {
+        this._ = {chars:{en:Array.from(enChars), de:null}, radix:radix, ignoreCase:ignoreCase, hasPad:hasPad, sortable:sortable, deflateNum:deflateNum};
+    }
+    get radix() {return this._.radix}
+    get ignoreCase() {return this._.ignoreCase}
+    get hasPad() {return this._.hasPad}
+    get sortable() {return this._.sortable}
+    fromBin(b) {}
+    fromStr(s) {}
+    fromInt(i) {}
+    fromNum(n) {}
+    toBin() {}
+    toStr() {}
+    toInt() {}
+    toNum() {}
+
+//    toNum(s) {return parseInt(s, this._.radix)}
+//    fromNum(n) {return n.toString(this._.radix)}
+//    toInt(s) {return BigInt('0x 0X'.some(p=>s.startsWith(p)) ? s : `0x${s}`)}
+//    fromInt(i) {return i.toString(this._.radix)}
+}
 class BaseX {
-//    constructor(chars, hasPad, sortable) {
-//        this._ = {chars:{en:null, de:null}, hasPad:hasPad, ignoreCase:ignoreCase, sortable:sortable};
-//    }
     encodeStr(str) {return this.encode((new TextEncoder()).encode(str))}
     decodeStr(str) {return (new TextDecoder()).decode(this.decode(str));}
     async compress(data, format='deflate-raw') { // format:gzip/deflate/deflate-raw
@@ -1094,9 +1125,24 @@ class Base16 extends BaseX {
     decode(str) {
         if (!('string'===typeof str && 0 === str.length % 2)) {throw new TypeError('引数Base16の文字数は偶数であるべきです。')}
         const u8a = new Uint8Array(str.length / 2);
-        for (let i = 0; i<str.length; i+=2) {u8a[i/2] = parseInt(str.substring(i, i+2), 16)}// 2文字を16進数として解析し、バイト値を取得
+        this.#valid(str); // gなど不正文字が入っていたら例外発生する
+        //for (let i = 0; i<str.length; i+=2) {u8a[i/2] = parseInt(str.substring(i, i+2), 16)}// 2文字を16進数として解析し、バイト値を取得
+        for (let i = 0; i<str.length; i+=2) {// 2文字を16進数として解析し、バイト値を取得
+            u8a[i/2] = parseInt(str.substring(i, i+2), 16); // /^[0-9a-z]$/ig でないと NaN を返す。Uint8ArrayはNaNを0と解釈してしまう。
+        }
         return u8a;
     }
+    #valid(str) {
+        const s = new Set(Array.from(str));
+        console.log(s);
+        console.log([...s].toString());
+        console.log([...s].toString().match(/^[0-9a-f]+$/ig));
+        if (![...s].toString().match(/^[0-9a-f]+$/ig)) {throw new TypeError(`不正なBase16文字です。:${str}`)}
+    }
+    toNum(s) {return parseInt(s, 16)}
+    fromNum(n) {return n.toString(16)}
+    toInt(s) {return BigInt('0x 0X'.some(p=>s.startsWith(p)) ? s : `0x${s}`)}
+    fromInt(i) {return i.toString(16)}
 }
 class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e00d32731ca4
     constructor(enChars) {
@@ -1148,7 +1194,7 @@ class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e
     decode(str) {
         // メモ: 正しく Base32 エンコードされてパディングされていれば長さが 8 の倍数のはず
         //       長さが 8 の倍数でない場合はパディングされていないかまたは正しく Base32 エンコードされていない
-        if ( (string.length & 0x7) !== 0 ) throw new Error(`無効なBase32文字列です。`);
+        if ( (string.length & 0x7) !== 0 ) throw new Error(`不正なBase32文字列です。長さが不正です。パディング不足か正しくエンコードされていません。`);
         const stringTrimmed = string.replace(/=*$/, '');// 末尾のパディング文字 '=' を除去する
         const result = new Uint8Array(stringTrimmed.length * 5 >>> 3);// メモ: デコード後のサイズは切り捨てで計算する
         let dataBuffer = 0;
@@ -1157,7 +1203,7 @@ class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e
         for (const encoding of stringTrimmed) {
 //            const value = base32AlphabetValuesMap.get(encoding);
             const value = this._.chars.de.get(encoding);
-            if ( typeof value === 'undefined' ) throw new Error('Invalid base32 string');
+            if ( typeof value === 'undefined' ) throw new Error(`不正なBase32文字列です。不正な文字が含まていました。:${encoding}`);
             // バッファに長さ 5 ビットの値を読み込む
             dataBuffer <<= 5;
             dataBuffer |= value;
@@ -1170,10 +1216,10 @@ class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e
         }
         // 正しく Base32 エンコードされたデータであれば残る長さは 5 ビット未満のはず
         // 5 ビット以上残った場合は正しく Base32 エンコードされていない
-        if ( dataBufferBitLength >= 5 ) throw new Error('無効なBase32文字列です。');
+        if ( dataBufferBitLength >= 5 ) throw new Error(`不正なBase32文字列です。長さが不正です。`);
         // 正しく Base32 エンコードされたデータであれば残る値は 0 のはず
         // 0 以外のデータが残った場合は正しく Base32 エンコードされていない
-        if ( (dataBuffer << (4 - dataBufferBitLength) & 0xf) !== 0 ) throw new Error('無効なBase32文字列です。');
+        if ( (dataBuffer << (4 - dataBufferBitLength) & 0xf) !== 0 ) throw new Error(`不正なBase32文字列です。長さが不正です。`);
         return result;
     }
 }
@@ -1405,6 +1451,182 @@ class Base256 extends BaseX {
     }
 }
 
+class SortableBaseN {// 出力されるASCII文字を辞書順にソート可能。最大64字:0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}
+    constructor(radix=64) {
+        if (!(Number.isSafeInteger(radix) && 2<=radix && radix<=64)) {throw new TypeError(`radixは2〜64のNumber型整数値であるべきです。`)}
+//        radix = BigInt(radix);
+//        if (!('bigint'===typeof radix && 2n<=radix && radix<=64n)) {throw new TypeError(`radixは2〜64のBigInt型整数値であるべきです。`)}
+        //this._ = {radix:radix, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null}
+        //this._ = {radix:{num:Number(radix), int:radix}, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null}
+        this._ = {radix:{num:radix, int:BigInt(radix)}, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null}
+        const C = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}';
+        this._.chars.en = C.slice(0, this._.radix.num);
+        this._.chars.de = Object.fromEntries(Object.entries(this._.chars.en).map(([i,c])=>[c,i]));
+        const R = 62 < this._.radix.num ? C.replace('{','\\{').replace('}','\\}') : C.slice(0,this._.radix.num);
+        this._.regexp = new RegExp(`^[${R}]$`);
+    }
+    get #enChars() {return this._.chars.en}
+    encode(bytes) {
+        const I = this.#binToInt(bytes);
+        const S = this.#addZeroStr(bytes, this.#intToStr(I));
+        return S || this.#enChars[0];
+    }
+    decode(str) {
+        const I = this.#strToInt(str);
+        const B = this.#addZeroByte(str, this.#intToBin(I));
+        return new Uint8Array(B);
+    }
+    /*
+    encode(bytes) {
+        let value = 0n; // 64ビット整数を扱えるBigIntを使用
+        let result = '';
+        // バイト配列を一つの大きな整数に変換
+        for (let i = 0; i < bytes.length; i++) {
+            value = (value << 8n) | BigInt(bytes[i]);
+        }
+        // 大きな整数をBase62に変換
+        while (value > 0n) {
+            result = this.#enChars[Number(value % this._.radix)] + result;
+            value = value / this._.radix;
+        }
+        // 元のバイト配列の先頭のゼロバイトを考慮して、結果の長さを調整
+        for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
+            result = this.#enChars[0] + result;
+        }
+        return result || this.#enChars[0]; // 空の場合は "0" を返す
+    }
+    decode(str) {
+        let value = 0n;
+        // Base62文字列を一つの大きな整数に変換
+        for (let i=0; i<str.length; i++) {
+            const char = str[i];
+            const index = this.#enChars.indexOf(char);
+            if (index === -1) {throw new TypeError(`不正なBase62文字が含まれています:${char}`);}
+            value = (value * this._.radix) + BigInt(index);
+        }
+        // 大きな整数をバイト配列に変換
+        const bytes = [];
+        while (value > 0n) {
+            bytes.unshift(Number(value & 0xFFn));
+            value = value >> 8n;
+        }
+        // 元の文字列の先頭の "0" の数を考慮して、先頭にゼロバイトを追加
+        for (let i=0; i<str.length && str[i]===this.#enChars[0]; i++) {bytes.unshift(0);}
+        return new Uint8Array(bytes);
+    }
+    toNum(n) {}
+    toInt(n) {}
+    toBin(n) {}
+    toStr(n) {}
+    */
+    fromBin(b) {
+        if (!this.#isBin(b)) {throw new TypeError(`引数は1バイト以上あるUint8Array型インスタンスであるべきです。`)}
+        this._.v.bin = b;
+        this._.v.str = this.encode(b);
+        this._.v.int = this.#binToInt(b);
+        this._.v.num = this.#binToNum(b);
+//        this._.v.int = this.#toInt(b);
+//        this._.v.num = this.#toNum(b);
+    }
+    fromStr(s) {
+        if (!this.#isStr(b)) {throw new TypeError(`引数は1字以上のString型プリミティブ値であるべきです。radix:${this._.radix.num}につき次の文字のみ使用可能です:${this._.chars.en}`)}
+        this._.v.str = s;
+        this._.v.bin = this.decode(s);
+        this._.v.int = this.#binToInt(this._.v.bin);
+        this._.v.num = this.#binToNum(this._.v.bin);
+//        this._.v.int = this.#toInt(this._.v.bin);
+//        this._.v.num = this.#toNum(this._.v.bin);
+    }
+    fromInt(i) {
+        if (!this.#isInt(i)) {throw new TypeError(`引数は0以上かつBigInt型プリミティブ値であるべきです。`)}
+        this._.v.int = i;
+        //this._.v.bin = this.#intToBin(i);
+        //this._.v.bin = new Uint8Array(this.#addZeroByte(str, this.#intToBin(I)));
+        this._.v.bin = new Uint8Array(this.#intToBin(I));
+        this._.v.str = this.#binToStr(this._.v.bin);
+        this._.v.num = this.#binToNum(this._.v.bin);
+//        this._.v.str = this.#toStr(this._.v.bin);
+//        this._.v.num = this.#toNum(this._.v.bin);
+    }
+    fromNum(n) {
+        if (!this.#isNum(n)) {throw new TypeError(`引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`)}
+        this._.v.num = n;
+        //this._.v.bin = this.#numToBin(n);
+        this._.v.bin = new Uint8Array(this.#numToBin(n));
+        console.log(this._.v.bin);
+        this._.v.str = this.#binToStr(this._.v.bin);
+        this._.v.int = this.#binToInt(this._.v.bin);
+//        this._.v.str = this.#toStr(this._.v.bin);
+//        this._.v.int = this.#toInt(this._.v.bin);
+    }
+    #isBin(v) {return v instanceof Uint8Array && 0 < v.length}
+    #isStr(v) {return 'string'===typeof v && 0 < v.length && ([...new Set(Array.from(v))].toString().match(this._.regexp))}
+    #isNum(v) {return Number.isSafeInteger(v) && 0 <= v}
+    #isInt(v) {return 'bigint'===typeof v && 0n <= v}
+    #binToInt(b) {// バイト配列を一つの大きな整数に変換
+        let I = 0n; // 64ビット整数を扱えるBigIntを使用
+        for (let i=0; i<b.length; i++) {I = (I << 8n) | BigInt(b[i])}
+        return I;
+    }
+    #binToNum(b) {return Number(this.#binToInt(b))}
+    #binToStr(b) {return this.#intToStr(this.#binToInt(b))}
+    #intToStr(i) {// 大きな整数をBase62に変換
+        if (0n===i) {return '0'}
+        let str = '';
+        while (i > 0n) {
+            str = this.#enChars[Number(i % this._.radix.int)] + str;
+            i = i / this._.radix.int;
+        }
+        return str;
+    }
+    #strToInt(s) {// Base62文字列を一つの大きな整数に変換
+        let I = 0n;
+        for (let i=0; i<s.length; i++) {
+            const char = s[i];
+            const index = this.#enChars.indexOf(char);
+            if (index === -1) {throw new TypeError(`不正なBase62文字が含まれています:${char}`);}
+            I = (I * this._.radix.int) + BigInt(index);
+        }
+        return I;
+    }
+    #intToBin(i) {// 大きな整数をバイト配列に変換
+        if (0n===i) {return [0]}
+        const bytes = [];
+        while (i > 0n) {
+            bytes.unshift(Number(i & 0xFFn));
+            i = i >> 8n;
+        }
+        return bytes;
+    }
+    #numToBin(n) {return this.#intToBin(BigInt(n))}
+    #addZeroStr(bytes, str) {// 元のバイト配列の先頭のゼロバイトを考慮して、結果の長さを調整
+        let S = str;
+        for (let i=0; i<bytes.length && bytes[i]===0; i++) {S = this.#enChars[0] + S}
+        return S;
+    }
+    #addZeroByte(str, bytes) {// 元の文字列の先頭の "0" の数を考慮して、先頭にゼロバイトを追加
+        for (let i=0; i<str.length && str[i]===this.#enChars[0]; i++) {bytes.unshift(0);}
+        return bytes;
+    }
+    get radix() {return this._.radix.num}
+//    get value() {return this._.v}
+    set value(v) {
+        if (this.#isBin(v)) {return this.fromBin(v)}
+        else if (this.#isStr(v)) {return this.fromStr(v)}
+        else if (this.#isInt(v)) {return this.fromInt(v)}
+        else if (this.#isNum(v)) {return this.fromNum(v)}
+        else {throw new TypeError(`型が不正です。Uint8Arrayインスタンスか、String,BigInt,Number型のプリミティブ値であるべきです。BigIntとNumberは0以上の整数、Number型ならNumber.isSafeInteger()が真を返す値のみ有効です。Stringは1字以上必要です。Uint8Arrayは1バイト以上必要です。`)}
+    }
+    get bin() {return this._.v.bin}
+    get str() {return this._.v.str}
+    get int() {return this._.v.int}
+    get num() {return this._.v.num}
+    set bin(v) {return this.fromBin(v)}
+    set str(v) {return this.fromStr(v)}
+    set int(v) {return this.fromInt(v)}
+    set num(v) {return this.fromNum(v)}
+}
+
 /*
 class Base64 {
     static encode(u8a) {return btoa(String.fromCharCode.apply(null, u8a))}
@@ -1610,6 +1832,7 @@ console.assert(3.14===MATH.PI);
     U: {// Utility
         NumberRounder: NumberRounder,
         Base: BaseFactory,
+        SortBase: SortableBaseN,
     }
 }, {
     get:(target, prop, receiver)=>{
