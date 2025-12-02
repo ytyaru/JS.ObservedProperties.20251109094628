@@ -788,6 +788,185 @@ class Typed {
         }
     }
 }
+/*
+class Base32 extends String {// [A-Z2-7]
+
+}
+class Base32Hex extends String {// [0-9A-V]
+
+}
+*/
+/*
+class Base64 extends String {
+    static #NUMBER = '0123456789';
+    static #ALPHABET_L = 'abcdefghijklmnopqrstuvwxyz';
+    static #ALPHABET_U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    static #SYMBOL = {
+        HEX: '+/',       // 16進数と同じ順序にする（使用する記号は基本形と同じだが、0-9A-Za-z+/の順である）
+        BASE: '+/',      // 基本形
+        URL: '-_',
+        FILE: '+-',      // ファイル名
+        XML_TOKEN: '.-', // XMLトークン
+        XML_ID: '_:',    // XML識別子
+        SRC_ID_1: '_-',  // プログラム識別子
+        SRC_ID_2: '._',  // プログラム識別子
+        SRC_ID_3: '_$',  // プログラム識別子（JavaScriptで使用可能）
+        REGEXP: '!-',    // 正規表現
+        ASCII_SORT_1: '{}',// ASCII文字コードにおいて文字をソートした時に大小関係が保たれること（Base文字はASCIIコードポイントの大小関係順であること）ファイル名に最適？
+        ASCII_SORT_2: '|~',// ASCII文字コードにおいて文字をソートした時に大小関係が保たれること（Base文字はASCIIコードポイントの大小関係順であること）ファイル名に最適？
+    };
+    static #SYMBOL_NAMES = [...Object.keys(this.#SYMBOL)];
+    static #PADDING = '=';
+    static #ENCODE_CHAR = this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + this.#SYMBOL;
+    static #DECORD_CHAR = Object.fromEntries(Object.entries(this.#ENCODE_CHAR).map(([i, ch]) => [ch, i]));
+    static #toBase64(base64url) {// Base64URLをBase64に変換する
+        const base64 = this.#replaceSymbol(base64url, this.#SYMBOL.URL, this.#SYMBOL.BASE);
+        return base64 + this.#addPadding(base64str);
+    }
+    static #replaceSymbol(base64str, srcSym, dstSym) {
+        if ('string'!==typeof base64str) {throw new TypeError(`base64strはプリミティブ型文字列であるべきです。`)}
+        if (!(Array.isArray(srcSym) && 2===srcSym.length && srcSym.every(v=>'string'===typeof v && 1===v.length))) {throw new TypeError(`srcSymは長さ1の任意文字二つを持つ配列であるべきです。`)}
+        if (!(Array.isArray(dstSym) && 2===dstSym.length && dstSym.every(v=>'string'===typeof v && 1===v.length))) {throw new TypeError(`dstSymは長さ1の任意文字二つを持つ配列であるべきです。`)}
+        const srcReg0 = new RegExp(`${srcSym[0]}`,'g');
+        const srcReg1 = new RegExp(`${srcSym[1]}`,'g');
+        return [0,1].reduce((str,i)=>str.replace(new RegExp(`${srcSym[i]}`,'g'), dstSym[i]), base64str);
+    }
+    static #addPadding(base64str) {
+        if (base64str.endsWith(this.#PADDING)) {return base64str}
+        const paddingNeeded = (4 - (base64str.length % 4)) % 4;
+        return base64str + this.#PADDING.repeat(paddingNeeded);
+    }
+    static #getSymbol(symbolType='BASE') {
+        return (Array.isArray(symbolType) && 2===symbolType.length && symbolType.every(v=>(('string'===typeof v) && (1===v.length))))
+            ? symbolType
+            : ((this.#SYMBOL_NAMES.some(n=>n===symbolType))
+                ? this.#SYMBOL[symbolType]
+                : (()=>{throw new TypeError(`symbolTypeが不正です。有効値か長さ1の任意文字二個を持つ配列であるべきです。:${symbolType} :有効値:${this.#SYMBOL_NAMES} または ['+','/'] 等。`)})());
+    }
+    static #getChars(symbolType='BASE') {
+        const SYMBOL = this.#getSymbol(symbolType);
+        const ENCODE_CHAR = ['HEX','ASCII_SORT_1','ASCII_SORT_2'].some(v=>v===symbolType)
+            ? this.#NUMBER + this.#ALPHABET_U + this.#ALPHABET_L + SYMBOL
+            : this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + SYMBOL;
+        const DECORD_CHAR = Object.fromEntries(Object.entries(ENCODE_CHAR).map(([i, ch]) => [ch, i]));
+        return [ENCODE_CHAR, DECORD_CHAR, SYMBOL];
+    }
+    static encode(uint8array) {
+        if (!(uint8array instanceof Uint8Array)) {throw new TypeError(`引数はUint8Array型インスタンスであるべきです。`)}
+        return uint8Array.reduce((acc, b) => acc + this.#ENCODE_CHAR[b], '');
+    }
+    static decode(base64str, symbolType) {
+        if ('string'!==typeof base64str) {throw new TypeError(`base64strはString型プリミティブ値であるべきです。`)}
+        if (undefined===symbolType) {symbolType = 'BASE'}
+        const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = this.#getChars(symbolType);
+        return Uint8Array.from(
+            base256str.split('').map(ch => {
+                if (!(ch in this.#DECORD_CHAR)) {throw Error("Cannot decode character '" + ch.charCodeAt(0) + "', not Braille.")}
+                return this.#DECORD_CHAR[ch];
+            })
+        );
+    }
+    constructor(value, symbolType, hasPadding) {
+        const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = Base64.#getChars(symbolType);
+        this._ = {chars:{en:ENCODE_CHAR, de:DECORD_CHAR, sym:SYMBOL}};
+        this._.value = {str:value, ui8a: Base64.decode(value, symbolType), num:this.#toNumber(), int:this.#toBigInt()};
+        this._.hasPadding = 'boolean'===typeof hasPadding ? hasPadding : sameArys(this.#SYMBOL.BASE, SYMBOL); // 基本形と同じなら=埋めするが、違えば=埋めしない
+    }
+    get chars() {return this._.chars.en}
+    get string() {return this._.value.str}
+    get uint8Array() {return this._.value.ui8a}
+    get number() {return this._.value.num;}
+    #toNumber(isThrow=false) {
+        if (53 < this._.value.ui8a.byteLength) {
+            const MSG = `53bitより大きいため変換不能です。`;
+            if (isThrow) {throw new TypeError(MSG)}
+            else {console.warn(MSG + `NaNを返します。`);}
+            return NaN;
+        }
+        let result = 0;
+        for (let i = 0; i < this._.value.ui8a.length; i++) {
+            result = (result << 8) + uint8Array[i];// 左シフトで桁をずらし、現在のバイトを追加する
+        }
+        return result;
+    }
+    get bigInt() {return this._.value.int}
+    #toBigInt() {
+        const hexString = Array.from(this._.value.ui8a).map(byte=>byte.toString(16).padStart(2, '0')).join('');
+        this._.value.int = BigInt('0x' + hexString);
+        return this._.value.int;
+    }
+    convert(symbolType, hasPadding) {// Base64を亜種に変換する
+        const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = Base64.#getChars(symbolType);
+        let S = '';
+        const PAD_IDX= this._.value.str.indexOf('=');
+        const PADDING = -1 < PAD_IDX ? this._.value.str.slice(PAD_IDX) : '';
+        const BASE64 = this._.value.str.slice(0, (-1 < PAD_IDX ? PAD_IDX : this._.value.str.length));
+        return BASE64.map(c=>ENCODE_CHAR[this._.chars.de[c]]).join('') + (('boolean'===typeof hasPadding ? hasPadding : this._.hasPadding) ? PADDING : '');
+    }
+}
+*/
+/*
+class BaseN extends String {// 2〜36:toString, 64:Base64, 256:Base256
+    static #NUMBER = '0123456789';
+    static #ALPHABET_L = 'abcdefghijklmnopqrstuvwxyz';
+    static #ALPHABET_U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    static #SYMBOL = '+/';
+    static #SYMBOL_URL = '-_';
+    static #PADDING = '=';
+    static #BASE64CHAR = this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + this.#SYMBOL;
+    static #toBase64(base64url) {// Base64URLをBase64に変換する
+        // 1. URLセーフな文字 '-', '_' をそれぞれ '+', '/' に戻す
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const paddingNeeded = (4 - (base64.length % 4)) % 4;
+        return base64 + '='.repeat(paddingNeeded);
+    }
+    static #BASE256CHAR = (
+        '⠀⢀⠠⢠⠐⢐⠰⢰⠈⢈⠨⢨⠘⢘⠸⢸' +
+        '⡀⣀⡠⣠⡐⣐⡰⣰⡈⣈⡨⣨⡘⣘⡸⣸' +
+        '⠄⢄⠤⢤⠔⢔⠴⢴⠌⢌⠬⢬⠜⢜⠼⢼' +
+        '⡄⣄⡤⣤⡔⣔⡴⣴⡌⣌⡬⣬⡜⣜⡼⣼' +
+        '⠂⢂⠢⢢⠒⢒⠲⢲⠊⢊⠪⢪⠚⢚⠺⢺' +
+        '⡂⣂⡢⣢⡒⣒⡲⣲⡊⣊⡪⣪⡚⣚⡺⣺' +
+        '⠆⢆⠦⢦⠖⢖⠶⢶⠎⢎⠮⢮⠞⢞⠾⢾' +
+        '⡆⣆⡦⣦⡖⣖⡶⣶⡎⣎⡮⣮⡞⣞⡾⣾' +
+        '⠁⢁⠡⢡⠑⢑⠱⢱⠉⢉⠩⢩⠙⢙⠹⢹' +
+        '⡁⣁⡡⣡⡑⣑⡱⣱⡉⣉⡩⣩⡙⣙⡹⣹' +
+        '⠅⢅⠥⢥⠕⢕⠵⢵⠍⢍⠭⢭⠝⢝⠽⢽' +
+        '⡅⣅⡥⣥⡕⣕⡵⣵⡍⣍⡭⣭⡝⣝⡽⣽' +
+        '⠃⢃⠣⢣⠓⢓⠳⢳⠋⢋⠫⢫⠛⢛⠻⢻' +
+        '⡃⣃⡣⣣⡓⣓⡳⣳⡋⣋⡫⣫⡛⣛⡻⣻' +
+        '⠇⢇⠧⢧⠗⢗⠷⢷⠏⢏⠯⢯⠟⢟⠿⢿' +
+        '⡇⣇⡧⣧⡗⣗⡷⣷⡏⣏⡯⣯⡟⣟⡿⣿').split('');
+    static from(value, base, chars) {
+        if (Number.isSafeInteger(value)) {
+            if (!Number.isSafeInteger(bit)) {bit=32}
+            if (value < 1 || 53 < value) {throw new RangeError(`bitが範囲外です。1〜53の整数値であるべきです。:${bit}`)}
+            if (value < 0 || 2**bit-1 < value) {throw new RangeError(`valueが範囲外です。0〜2**bit-1の範囲内であるべきです。:${value}`)}
+        } else if ('bigint'===typeof value) {
+        } else if ('string'===typeof value) {
+
+        } else if (value instanceof Uint8Array) {
+
+        } else if (value instanceof BaseN) {return value}
+        else {throw new TypeError(`Number(.isSafeInteger)/BigInt/String型のリテラル値かUint8Array型インスタンスであるべきです。`)}
+    }
+    constructor(value, base, bit, chars) {
+    }
+    get base() {return this._.base}
+    valueOf() {return this._.value}
+    get value() {return this._.value}
+    toString() {return this._.value}
+}
+class BinaryBaseN extends BaseN {// 二進数ピッタリの値までに収まる 2^8=256, ^16,32,64,128,... UUIDは128bitの乱数でありBase16表記,ULIDはBase32表記
+    constructor(value, base, bit, chars) {
+    }
+
+}
+class Convertor {// 数(Number,BigInt),BaseN文字列,Uint8Arrayインスタンスを相互変換する
+
+
+}
+*/
 class BaseChars {
     static NUMBER = '0123456789';
     static ALPHABET_L = 'abcdefghijklmnopqrstuvwxyz';
@@ -809,6 +988,9 @@ class BaseChars {
     static SYMBOL_NAMES = [...Object.keys(this.SYMBOL)];
     static isSymbols(v) {return ((Array.isArray(v) && 2===v.length && v.every(s=>'string'===typeof s && 1===s.length)) || this.SYMBOL_NAMES.some(n=>n===v))}
     static PADDING = '=';
+//    static ENCODE_CHAR = this.#ALPHABET_U + this.#ALPHABET_L + this.#NUMBER + this.#SYMBOL;
+//    static DECORD_CHAR = Object.fromEntries(Object.entries(this.#ENCODE_CHAR).map(([i, ch]) => [ch, i]));
+//    static #DECORD_CHAR = Object.fromEntries(Object.entries(this.#CHAR).map(([i, ch]) => [ch, i]));
     static BASE256CHAR = (
         '⠀⢀⠠⢠⠐⢐⠰⢰⠈⢈⠨⢨⠘⢘⠸⢸' +
         '⡀⣀⡠⣠⡐⣐⡰⣰⡈⣈⡨⣨⡘⣘⡸⣸' +
@@ -893,7 +1075,6 @@ class Compresser {
         return await new Response(os).arrayBuffer();
     }
 }
-/*
 class BaseN {
     constructor(radix=64, enChars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', ignoreCase=false, hasPad=true, sortable=false, deflateNum=0) {
         this._ = {chars:{en:Array.from(enChars), de:null}, radix:radix, ignoreCase:ignoreCase, hasPad:hasPad, sortable:sortable, deflateNum:deflateNum};
@@ -910,8 +1091,12 @@ class BaseN {
     toStr() {}
     toInt() {}
     toNum() {}
+
+//    toNum(s) {return parseInt(s, this._.radix)}
+//    fromNum(n) {return n.toString(this._.radix)}
+//    toInt(s) {return BigInt('0x 0X'.some(p=>s.startsWith(p)) ? s : `0x${s}`)}
+//    fromInt(i) {return i.toString(this._.radix)}
 }
-*/
 class BaseX {
     encodeStr(str) {return this.encode((new TextEncoder()).encode(str))}
     decodeStr(str) {return (new TextDecoder()).decode(this.decode(str));}
@@ -962,6 +1147,11 @@ class Base16 extends BaseX {
 class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e00d32731ca4
     constructor(enChars) {
         if (!('string'===typeof enChars && 32===enChars.length)){throw new TypeError(`enCharsは32字の文字列であるべきです。`)}
+        /*
+        this._ = {chars:{en:enChars, de:new Map([
+            ...Array.from(enChars, (encoding, value) => [encoding, value]),
+        ])}}:
+        */
         this._ = {
             chars:{
                 en:enChars,
@@ -1011,6 +1201,7 @@ class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e
         let dataBufferBitLength = 0;
         let byteOffset = 0;
         for (const encoding of stringTrimmed) {
+//            const value = base32AlphabetValuesMap.get(encoding);
             const value = this._.chars.de.get(encoding);
             if ( typeof value === 'undefined' ) throw new Error(`不正なBase32文字列です。不正な文字が含まていました。:${encoding}`);
             // バッファに長さ 5 ビットの値を読み込む
@@ -1034,6 +1225,79 @@ class Base32Base extends BaseX {// https://qiita.com/kerupani129/items/4f3b44b2e
 }
 class Base32 extends Base32Base {constructor() {super('ABCDEFGHIJKLMNOPQRSTUVWXYZ234567')}}
 class Base32Hex extends Base32Base {constructor() {super('0123456789ABCDEFGHIJKLMNOPQRSTUV')}}
+/*
+class Base32 {// https://qiita.com/kerupani129/items/4f3b44b2e00d32731ca4
+    static EN_CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    const DE_CHARS = new Map([
+        ...Array.from(this.EN_CHARS, (encoding, value) => [encoding, value]),
+//        ...Array.from(this.EN_CHARS.toLowerCase(), (encoding, value) => [encoding, value]),
+    ]);
+    static encode(u8a) {
+        const byteLength = uint8Array.byteLength;
+        let dataBuffer = 0;
+        let dataBufferBitLength = 0;
+        let byteOffset = 0;
+        let result = '';
+        // バッファにデータが残っているか、またはバッファに読み込めるデータが残っていたら継続
+        while (0 < dataBufferBitLength || byteOffset < byteLength) {
+            // バッファのデータが少なければデータを追加する
+            if ( dataBufferBitLength < 5 ) {
+                if ( byteOffset < byteLength ) {
+                    // 読み込めるデータが残っていたら読み込む
+                    dataBuffer <<= 8;
+                    dataBuffer |= uint8Array[byteOffset++];
+                    dataBufferBitLength += 8;
+                } else {
+                    // 読み込めるデータがなければ値が 0 のパディングビットを追加して長さを 5 ビットにする
+                    dataBuffer <<= 5 - dataBufferBitLength;
+                    dataBufferBitLength = 5;
+                }
+            }
+            // バッファのデータの左の長さ 5 ビットの値を取得する
+            dataBufferBitLength -= 5;
+            const value = dataBuffer >>> dataBufferBitLength & 0x1f;
+            result += this.EN_CHARS[value];// 値を Base32 文字に変換
+        }
+        // パディング文字 '=' を追加
+        const targetLength = Math.ceil(result.length / 8) * 8;
+        const resultPadded = result.padEnd(targetLength, '=');
+        return resultPadded;
+    }
+    static decode(str) {
+        // メモ: 正しく Base32 エンコードされてパディングされていれば長さが 8 の倍数のはず
+        //       長さが 8 の倍数でない場合はパディングされていないかまたは正しく Base32 エンコードされていない
+        if ( (string.length & 0x7) !== 0 ) throw new Error(`無効なBase32文字列です。`);
+        const stringTrimmed = string.replace(/=*$/, '');// 末尾のパディング文字 '=' を除去する
+        const result = new Uint8Array(stringTrimmed.length * 5 >>> 3);// メモ: デコード後のサイズは切り捨てで計算する
+        let dataBuffer = 0;
+        let dataBufferBitLength = 0;
+        let byteOffset = 0;
+        for (const encoding of stringTrimmed) {
+//            const value = base32AlphabetValuesMap.get(encoding);
+            const value = DE_CHARS.get(encoding);
+            if ( typeof value === 'undefined' ) throw new Error('Invalid base32 string');
+            // バッファに長さ 5 ビットの値を読み込む
+            dataBuffer <<= 5;
+            dataBuffer |= value;
+            dataBufferBitLength += 5;
+            // バッファのデータが少なければデータを取得する
+            if ( dataBufferBitLength >= 8 ) {
+                dataBufferBitLength -= 8;
+                result[byteOffset++] = dataBuffer >>> dataBufferBitLength;
+            }
+        }
+        // 正しく Base32 エンコードされたデータであれば残る長さは 5 ビット未満のはず
+        // 5 ビット以上残った場合は正しく Base32 エンコードされていない
+        if ( dataBufferBitLength >= 5 ) throw new Error('無効なBase32文字列です。');
+        // 正しく Base32 エンコードされたデータであれば残る値は 0 のはず
+        // 0 以外のデータが残った場合は正しく Base32 エンコードされていない
+        if ( (dataBuffer << (4 - dataBufferBitLength) & 0xf) !== 0 ) throw new Error('無効なBase32文字列です。');
+        return result;
+    }
+    static encodeStr(str) {return this.encode((new TextEncoder()).encode(str))}
+    static decodeStr(str) {return (new TextDecoder()).decode(this.decode(str));}
+}
+*/
 class Base64Base extends BaseX {
     static #NUMBER = '0123456789';
     static #ALPHABET_U = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -1046,14 +1310,20 @@ class Base64Base extends BaseX {
         this._.chars.en = sortable
             ? Base64Base.#NUMBER + Base64Base.#ALPHABET_U + Base64Base.#ALPHABET_L + symbols.join('')
             : Base64Base.#ALPHABET_U + Base64Base.#ALPHABET_L + Base64Base.#NUMBER + symbols.join('');
+//            ? BaseChars.NUMBER + BaseChars.ALPHABET_U + BaseChars.ALPHABET_L + symbols.join('')
+//            : BaseChars.ALPHABET_U + BaseChars.ALPHABET_L + BaseChars.NUMBER + symbols.join('');
         this._.chars.de = Object.fromEntries(Object.entries(this._.chars.en).map(([i,c]) => [c,i]));
     }
     encode(u8a) {
         const s = btoa(String.fromCharCode.apply(null, u8a));
+//        return this.#fromBasic(s);
+//        return this.#isBasic ? s : s.replaceAll('+', this._.symbols[0]).replaceAll('/', this._.symbols[1]);
         const t = this.#fromBasic(s);
         return this._.hasPad ? t : this.#delPad(t);
     }
+//    static encode(u8a) {return btoa(String.fromCharCode.apply(null, u8a))}
     decode(str) {
+//        if (this.#isBasic) {str = str.replaceAll(this._.symbols[0], '+').replaceAll(this._.symbols[1], '/')}
         str = this.#toBasic(str);
         if (!this._.hasPad) {str = this.#addPad(str)}
         const decodedString = atob(str);
@@ -1073,6 +1343,10 @@ class Base64Base extends BaseX {
     }
     #delPad(str) {return str.replaceAll('=','')}
 }
+//class Base64 extends Base64Base {constructor(){super(true, false, ['+','/'])}}
+//class Base64URL extends Base64Base {constructor(){super(false, false, ['-','_'])}}
+//class Base64Hex extends Base64Base {constructor(){super(false, true, ['{','}'])}}
+
 class Base64 extends Base64Base {
     static #CHARS = {
         B: Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'),
@@ -1102,6 +1376,10 @@ class Base64 extends Base64Base {
         else {this.#throw()}
     }
     #throw() {throw new TypeError(`引数はstring型プリミティブ値かUint8Array型インスタンスであるべきです。`)}
+//    async encodeAsync(u8a,format='deflate-raw') {return this.encode(await this.compress(u8a,format))}
+//    async decodeAsync(str,format='deflate-raw') {return await this.decompress(this.decode(str),format)}
+//    async encodeStrAsync(str,format='deflate-raw') {return this.encodeStr(await this.compress((new TextEncoder()).encode(str),format))}
+//    async decodeStrAsync(str,format='deflate-raw') {return await this.decompress((new TextDecoder()).decode(str),format)}
 }
 class SameBaseChanger {// 基数が同一のBaseNパターンを変換する
     static symbol(s, from=['+','/'], to=['-','_']) {return s.replaceAll(from[0],to[0]).replaceAll(from[1],to[1])}
@@ -1117,6 +1395,7 @@ class Base64URL extends Base64Base {
         else {this.#throw()}
     }
     #toBase(s) {return data.replaceAll('-','+').replaceAll('_','/')}
+//    #toBase(s) {return SameBaseChanger.symbol(data, ['-','_'], ['+','/'])}
     toHex(data) {
         if ('string'===typeof data) {return this.#toHex(data)}
         else if (data instanceof Uint8Array) {return this.#toHex(this.encode(data))}
@@ -1137,6 +1416,7 @@ class Base64URL extends Base64Base {
 
 }
 class Base64Hex extends Base64Base {constructor(){super(false, true, ['{','}'])}}
+
 class Base256 extends BaseX {
     static #CHAR = (
         '⠀⢀⠠⢠⠐⢐⠰⢰⠈⢈⠨⢨⠘⢘⠸⢸' +
@@ -1170,16 +1450,17 @@ class Base256 extends BaseX {
         );
     }
 }
-class SortableBaseN {// 出力されるASCII文字を辞書順にソート可。最大64字。記号は{}だと使用できない文脈があるが、-_ならURLでも使用可能。但し順序が分かり難い。
-    //constructor(radix=64, urlSafed=false, numSafed=false) {
-    constructor(radix=64, urlSafed=undefined, numSafed=undefined) {
-        urlSafed = urlSafed ?? (62 < radix);
-        numSafed = numSafed ?? false;
+
+class SortableBaseN {// 出力されるASCII文字を辞書順にソート可能。最大64字:0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}
+    constructor(radix=64, safed=false) {
         if (!(Number.isSafeInteger(radix) && 2<=radix && radix<=64)) {throw new TypeError(`radixは2〜64のNumber型整数値であるべきです。`)}
-        if ('boolean'!==typeof urlSafed) {throw new TypeError(`urlSafedは真偽値であるべきです。radix=64時、真なら-_偽なら{}の記号を使用します。`)}
-        if ('boolean'!==typeof numSafed) {throw new TypeError(`numSafedは真偽値であるべきです。真なら0〜Number.MAX_SAFE_INTEGERの範囲外値を代入時常に例外発生します。偽ならnumに範囲外値を代入しない限り許可します。`)}
-        this._ = {radix:{num:radix, int:BigInt(radix)}, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null, urlSafed:urlSafed, numSafed:numSafed}
-        const C = urlSafed ? '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz' : '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}';
+        if ('boolean'!==safed) {throw new TypeError(`safedは真偽値であるべきです。真なら0〜Number.MAX_SAFE_INTEGERの範囲外値を代入時例外発生します。`)}
+//        radix = BigInt(radix);
+//        if (!('bigint'===typeof radix && 2n<=radix && radix<=64n)) {throw new TypeError(`radixは2〜64のBigInt型整数値であるべきです。`)}
+        //this._ = {radix:radix, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null}
+        //this._ = {radix:{num:Number(radix), int:radix}, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null}
+        this._ = {radix:{num:radix, int:BigInt(radix)}, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null, safed:safed}
+        const C = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}';
         this._.chars.en = C.slice(0, this._.radix.num);
         this._.chars.de = Object.fromEntries(Object.entries(this._.chars.en).map(([i,c])=>[c,i]));
         const R = 62 < this._.radix.num ? C.replace('{','\\{').replace('}','\\}') : C.slice(0,this._.radix.num);
@@ -1195,217 +1476,58 @@ class SortableBaseN {// 出力されるASCII文字を辞書順にソート可。
         const I = this.#strToInt(str);
         const B = this.#addZeroByte(str, this.#intToBin(I));
         return new Uint8Array(B);
-    }
-    fromBin(b) {
-        if (!this.#isBin(b)) {throw new TypeError(`引数は1バイト以上あるUint8Array型インスタンスであるべきです。`)}
-        this._.v.bin = b;
-        this._.v.str = this.encode(b);
-        this._.v.int = this.#binToInt(b);
-        this._.v.num = this.#binToNum(b);
-        this.#throwUnsafed();
-    }
-    #throwUnsafed() {if (this._.numSafed && !this.#isNum(this._.v.num)) {throw new RangeError(`numが0〜Number.MAX_SAFE_INTEGERの範囲外です。numSafed=falseにすると範囲外も許容します。`)}}
-    fromStr(s) {
-        if (!this.#isStr(b)) {throw new TypeError(`引数は1字以上のString型プリミティブ値であるべきです。radix:${this._.radix.num}につき次の文字のみ使用可能です:${this._.chars.en}`)}
-        this._.v.str = s;
-        this._.v.bin = this.decode(s);
-        this._.v.int = this.#binToInt(this._.v.bin);
-        this._.v.num = this.#binToNum(this._.v.bin);
-        this.#throwUnsafed();
-    }
-    fromInt(i) {
-        if (!this.#isInt(i)) {throw new TypeError(`引数は0以上かつBigInt型プリミティブ値であるべきです。`)}
-        this._.v.int = i;
-        this._.v.bin = new Uint8Array(this.#intToBin(I));
-        this._.v.str = this.#binToStr(this._.v.bin);
-        this._.v.num = this.#binToNum(this._.v.bin);
-        this.#throwUnsafed();
-    }
-    fromNum(n) {
-        if (!this.#isNum(n)) {throw new TypeError(`引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`)}
-        this._.v.num = n;
-        this._.v.bin = new Uint8Array(this.#numToBin(n));
-        this._.v.str = this.#binToStr(this._.v.bin);
-        this._.v.int = this.#binToInt(this._.v.bin);
-        this.#throwUnsafed();
-    }
-    #isBin(v) {return v instanceof Uint8Array && 0 < v.length}
-    #isStr(v) {return 'string'===typeof v && 0 < v.length && ([...new Set(Array.from(v))].toString().match(this._.regexp))}
-    #isNum(v) {return Number.isSafeInteger(v) && 0 <= v}
-    #isInt(v) {return 'bigint'===typeof v && 0n <= v}
-    #binToInt(b) {// バイト配列を一つの大きな整数に変換
-        let I = 0n; // 64ビット整数を扱えるBigIntを使用
-        for (let i=0; i<b.length; i++) {I = (I << 8n) | BigInt(b[i])}
-        return I;
-    }
-    #binToNum(b) {return Number(this.#binToInt(b))}
-    #binToStr(b) {return this.#intToStr(this.#binToInt(b))}
-    #intToStr(i) {// 大きな整数をBase62に変換
-        if (0n===i) {return this._.chars.en[0]}
-        let str = '';
-        while (i > 0n) {
-            str = this.#enChars[Number(i % this._.radix.int)] + str;
-            i = i / this._.radix.int;
-        }
-        return str;
-    }
-    #strToInt(s) {// Base62文字列を一つの大きな整数に変換
-        let I = 0n;
-        for (let i=0; i<s.length; i++) {
-            const char = s[i];
-            const index = this.#enChars.indexOf(char);
-            if (index === -1) {throw new TypeError(`不正なBase62文字が含まれています:${char}`);}
-            I = (I * this._.radix.int) + BigInt(index);
-        }
-        return I;
-    }
-    #intToBin(i) {// 大きな整数をバイト配列に変換
-        if (0n===i) {return [0]}
-        const bytes = [];
-        while (i > 0n) {
-            bytes.unshift(Number(i & 0xFFn));
-            i = i >> 8n;
-        }
-        return bytes;
-    }
-    #numToBin(n) {return this.#intToBin(BigInt(n))}
-    #addZeroStr(bytes, str) {// 元のバイト配列の先頭のゼロバイトを考慮して、結果の長さを調整
-        let S = str;
-        for (let i=0; i<bytes.length && bytes[i]===0; i++) {S = this.#enChars[0] + S}
-        return S;
-    }
-    #addZeroByte(str, bytes) {// 元の文字列の先頭の "0" の数を考慮して、先頭にゼロバイトを追加
-        for (let i=0; i<str.length && str[i]===this.#enChars[0]; i++) {bytes.unshift(0);}
-        return bytes;
-    }
-    get radix() {return this._.radix.num}
-//    get value() {return this._.v}
-    set value(v) {
-        if (this.#isBin(v)) {return this.fromBin(v)}
-        else if (this.#isStr(v)) {return this.fromStr(v)}
-        else if (this.#isInt(v)) {return this.fromInt(v)}
-        else if (this.#isNum(v)) {return this.fromNum(v)}
-        else {throw new TypeError(`型が不正です。Uint8Arrayインスタンスか、String,BigInt,Number型のプリミティブ値であるべきです。BigIntとNumberは0以上の整数、Number型ならNumber.isSafeInteger()が真を返す値のみ有効です。Stringは1字以上必要です。Uint8Arrayは1バイト以上必要です。`)}
-    }
-    get bin() {return this._.v.bin}
-    get str() {return this._.v.str}
-    get int() {return this._.v.int}
-    get num() {return this._.v.num}
-    set bin(v) {return this.fromBin(v)}
-    set str(v) {return this.fromStr(v)}
-    set int(v) {return this.fromInt(v)}
-    set num(v) {return this.fromNum(v)}
-    get urlSafed() {return this._.urlSafed}
-    get numSafed() {return this._.numSafed}
-}
-class BaseCharsMaker {
-    static #isSymbol(v) {return (undefined===v || null===v) || ('string'===v && 2===v.length && v.length!==(new Set(Array.from(v))).size)}
-    static make(radix, sortable, urlSafed, paded, numSafed, symbols) {
-        if (!(Number.isSafeInteger(radix) && ((2<=radix && radix<=64) || radix===256))) {throw new TypeError(`radixは2〜64か256のNumber型整数値であるべきです。`)}
-        if ('boolean'!==typeof sortable) {throw new TypeError(`sortableはBoolean値であるべきです。`)}
-        if ('boolean'!==typeof urlSafed) {throw new TypeError(`urlSafedはBoolean値であるべきです。`)}
-        if ('boolean'!==typeof paded) {throw new TypeError(`padedはBoolean値であるべきです。`)}
-        if ('boolean'!==typeof numSafed) {throw new TypeError(`numSafedはBoolean値であるべきです。`)}
-        //if (64===radix && !((undefined===symbols || null===symbols) || ('string'===symbols && 2===symbols.length))) {throw new TypeError(`symbolsはradix=64時、undefined/null/長さ2の文字列のいずれかであるべきです。`)}
-        if ([63,64].some(v=>v===radix) && !this.#isSymbol(symbols)) {throw new TypeError(`symbolsはradix=63,64時undefined/null/重複しない長さ1の2字を持つString値のいずれかであるべきです。`)}
-        if (sortable && this.#isSymbol(symbols)) {throw new TypeError(`sortable=trueの場合、symbolsの指定はできません。`)}
-        const N = '0123456789';
-        const A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        const a = 'abcdefghijklmnopqrstuvwxyz';
-        const C = 256===radix
-            ? '⠀⢀⠠⢠⠐⢐⠰⢰⠈⢈⠨⢨⠘⢘⠸⢸⡀⣀⡠⣠⡐⣐⡰⣰⡈⣈⡨⣨⡘⣘⡸⣸⠄⢄⠤⢤⠔⢔⠴⢴⠌⢌⠬⢬⠜⢜⠼⢼⡄⣄⡤⣤⡔⣔⡴⣴⡌⣌⡬⣬⡜⣜⡼⣼⠂⢂⠢⢢⠒⢒⠲⢲⠊⢊⠪⢪⠚⢚⠺⢺⡂⣂⡢⣢⡒⣒⡲⣲⡊⣊⡪⣪⡚⣚⡺⣺⠆⢆⠦⢦⠖⢖⠶⢶⠎⢎⠮⢮⠞⢞⠾⢾⡆⣆⡦⣦⡖⣖⡶⣶⡎⣎⡮⣮⡞⣞⡾⣾⠁⢁⠡⢡⠑⢑⠱⢱⠉⢉⠩⢩⠙⢙⠹⢹⡁⣁⡡⣡⡑⣑⡱⣱⡉⣉⡩⣩⡙⣙⡹⣹⠅⢅⠥⢥⠕⢕⠵⢵⠍⢍⠭⢭⠝⢝⠽⢽⡅⣅⡥⣥⡕⣕⡵⣵⡍⣍⡭⣭⡝⣝⡽⣽⠃⢃⠣⢣⠓⢓⠳⢳⠋⢋⠫⢫⠛⢛⠻⢻⡃⣃⡣⣣⡓⣓⡳⣳⡋⣋⡫⣫⡛⣛⡻⣻⠇⢇⠧⢧⠗⢗⠷⢷⠏⢏⠯⢯⠟⢟⠿⢿⡇⣇⡧⣧⡗⣗⡷⣷⡏⣏⡯⣯⡟⣟⡿⣿'
-            : Array.from((sortable
-                //? (urlSafed ? `-${N}${A}_${a}` : `${N}${A}${a}{}`)
-                //? (urlSafed ? `-${N}${A}_${a}` : `${N}${A}${a}{}`)
-                ? ((62 < radix) ? (urlSafed ? `-${N}${A}_${a}` : `${N}${A}${a}{}`) : `${N}${A}${a}`)
-                : (urlSafed ? `${A}${a}${N}-_` : `${A}${a}${N}+/`)
-                ).slice(0, radix));
-        if (!sortable && this.#isSymbol(symbols) && [63,64].some(v=>v===radix)) {// 後ろ二字を任意の記号に変更する
-            for (let i=0; 0<64-radix; i++) {C[63+i]=symbols[i]}
-        }
-//        if (radix!==(new Set(C)).size) {throw new TypeError(`使用文字に重複があります。:${C.join('')}`)};
-        if (this.#isSymbol(symbols) && symbols.length!==(new Set(Array.from(symbols))).size) {throw new TypeError(`symbolsに重複があります。:${symbols}`)};
-        return ({
-            typeName: `b${radix}${(256===radix ? '' : ((sortable ? 's' : '')+(urlSafed ? 'u' : '')+(paded ? 'p' : '')+(numSafed ? 'n' : '')+(symbols ?? '')))}`,
-            chars: C,
-            radix: radix,
-            sortable: sortable,
-            urlSafed: urlSafed,
-            paded: paded,
-            numSafed: numSafed,
-            symbols: symbols,
-        });
-    }
-    static fromTypeName(typeName, value) {
-        // ^(?<year>\d{4})(?:-(?<month>\d{2}))?(?:-(?<day>\d{2}))?$
-        //typeName.mach(/^b(?<radix>\d{1,})s?u?p?n?$/);
-        //typeName.mach(/^b(?<radix>\d{1,})(?<sortable>s?)(?<urlSafed>u?)(?<paded>p?)(?<numSafed>n?)(?<symbols>.{1,2})$/);
-        if ('string'!==typeName) {throw new TypeError(`typeNameはString値であるべきです。`)}
-        const m = typeName.mach(/^b(?<radix>\d{1,})(?:-(?<sortable>s))?(?:-(?<urlSafed>u))(?:-(?<paded>p))?(?:-(?<numSafed>n))?(?:-(?<texted>t))?(?:-(?<symbols>.{1,2}))?$/);
-        if (!m) {throw new TypeError(`typeNameは不正な文字列です。:${typeName}`)}
-        console.log(m);
-        const b = new BaseN(parseInt(m.radix), !!m.sortable, !!m.urlSafed, !!m.paded, !!m.numSafed, !!m.texted, !!m.symbols ? m.symbols : undefined);
-        if (value) { b.value = value; }
-        return b;
-    }
-}
-class BaseN {
-    static fromTypeName(typeName, value) {return BaseCharsMaker.fromTypeName(typeName, value)}
-    static fromFull(full) {
-        if ('string'!==typeof full) {throw new TypeError(`fullはString値であるべきです。`)}
-        const i = full.indexOf(':');
-        if (-1===i) {throw new TypeError(`引数fullには:があるはずです。`)}
-        return BaseCharsMaker.fromTypeName(full.slice(0,i), full.slice(i+1));
-    }
-    constructor(radix=64, sortable=false, urlSafed=true, paded=false, numSafed=false, texted=false, symbols=undefined) {
-        const o = BaseCharsMaker.make(radix, sortable, urlSafed, paded, numSafed, symbols);
-        this._ = {radix:{num:o.radix, int:BigInt(o.radix)}, chars:{en:o.chars, de:null}, v:{bin:null, str:null, num:null, int:null, txt:null}, regexp:null, urlSafed:urlSafed, numSafed:numSafed, texted:texted}
-        this._.chars.de = Object.fromEntries(Object.entries(this._.chars.en).map(([i,c])=>[c,i]));
-//        const R = 62 < this._.radix.num ? C.replace('{','\\{').replace('}','\\}') : C.slice(0,this._.radix.num);
-//        '.,<>=-+*!?|[](){}^$\\'
-        const needEscapeChars = '.^$|\\[](){}+*?-'; // 正規表現文字クラス[]内でエスケープ必須な文字一覧
-        const R = this._.chars.en.map(c=>needEscapeChars.some(e=>e===c) ? '\\'+c : c)
-        this._.regexp = new RegExp(`^[${R}]$`);
     }
     /*
-    constructor(radix=64, urlSafed=undefined, numSafed=undefined) {
-        urlSafed = urlSafed ?? (62 < radix);
-        numSafed = numSafed ?? false;
-        if (!(Number.isSafeInteger(radix) && 2<=radix && radix<=64)) {throw new TypeError(`radixは2〜64のNumber型整数値であるべきです。`)}
-        if ('boolean'!==typeof urlSafed) {throw new TypeError(`urlSafedは真偽値であるべきです。radix=64時、真なら-_偽なら{}の記号を使用します。`)}
-        if ('boolean'!==typeof numSafed) {throw new TypeError(`numSafedは真偽値であるべきです。真なら0〜Number.MAX_SAFE_INTEGERの範囲外値を代入時常に例外発生します。偽ならnumに範囲外値を代入しない限り許可します。`)}
-        this._ = {radix:{num:radix, int:BigInt(radix)}, chars:{en:null, de:null}, v:{bin:null, str:null, num:null, int:null}, regexp:null, urlSafed:urlSafed, numSafed:numSafed}
-        const C = urlSafed ? '-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz' : '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}';
-        this._.chars.en = C.slice(0, this._.radix.num);
-        this._.chars.de = Object.fromEntries(Object.entries(this._.chars.en).map(([i,c])=>[c,i]));
-        const R = 62 < this._.radix.num ? C.replace('{','\\{').replace('}','\\}') : C.slice(0,this._.radix.num);
-        this._.regexp = new RegExp(`^[${R}]$`);
-    }
-    */
-    get #enChars() {return this._.chars.en}
     encode(bytes) {
-        const I = this.#binToInt(bytes);
-        const S = this.#addZeroStr(bytes, this.#intToStr(I));
-        return S || this.#enChars[0];
+        let value = 0n; // 64ビット整数を扱えるBigIntを使用
+        let result = '';
+        // バイト配列を一つの大きな整数に変換
+        for (let i = 0; i < bytes.length; i++) {
+            value = (value << 8n) | BigInt(bytes[i]);
+        }
+        // 大きな整数をBase62に変換
+        while (value > 0n) {
+            result = this.#enChars[Number(value % this._.radix)] + result;
+            value = value / this._.radix;
+        }
+        // 元のバイト配列の先頭のゼロバイトを考慮して、結果の長さを調整
+        for (let i = 0; i < bytes.length && bytes[i] === 0; i++) {
+            result = this.#enChars[0] + result;
+        }
+        return result || this.#enChars[0]; // 空の場合は "0" を返す
     }
     decode(str) {
-        const I = this.#strToInt(str);
-        const B = this.#addZeroByte(str, this.#intToBin(I));
-        return new Uint8Array(B);
+        let value = 0n;
+        // Base62文字列を一つの大きな整数に変換
+        for (let i=0; i<str.length; i++) {
+            const char = str[i];
+            const index = this.#enChars.indexOf(char);
+            if (index === -1) {throw new TypeError(`不正なBase62文字が含まれています:${char}`);}
+            value = (value * this._.radix) + BigInt(index);
+        }
+        // 大きな整数をバイト配列に変換
+        const bytes = [];
+        while (value > 0n) {
+            bytes.unshift(Number(value & 0xFFn));
+            value = value >> 8n;
+        }
+        // 元の文字列の先頭の "0" の数を考慮して、先頭にゼロバイトを追加
+        for (let i=0; i<str.length && str[i]===this.#enChars[0]; i++) {bytes.unshift(0);}
+        return new Uint8Array(bytes);
     }
+    toNum(n) {}
+    toInt(n) {}
+    toBin(n) {}
+    toStr(n) {}
+    */
     fromBin(b) {
         if (!this.#isBin(b)) {throw new TypeError(`引数は1バイト以上あるUint8Array型インスタンスであるべきです。`)}
         this._.v.bin = b;
         this._.v.str = this.encode(b);
         this._.v.int = this.#binToInt(b);
         this._.v.num = this.#binToNum(b);
-        if (this._.texted) {this._.v.txt = this.#binToTxt(b)}
-        this.#throwUnsafed();
-    }
-    #throwUnsafed() {if (this._.numSafed && !this.#isNum(this._.v.num)) {throw new RangeError(`numが0〜Number.MAX_SAFE_INTEGERの範囲外です。numSafed=falseにすると範囲外も許容します。`)}}
-    fromTxt(t) {
-        if (!this.#isStr(b)) {throw new TypeError(`引数は1字以上のString型プリミティブ値であるべきです。`)}
-        return this.fromBin((new TextEncoder()).encode(t));
+//        this._.v.int = this.#toInt(b);
+//        this._.v.num = this.#toNum(b);
     }
     fromStr(s) {
         if (!this.#isStr(b)) {throw new TypeError(`引数は1字以上のString型プリミティブ値であるべきです。radix:${this._.radix.num}につき次の文字のみ使用可能です:${this._.chars.en}`)}
@@ -1413,26 +1535,30 @@ class BaseN {
         this._.v.bin = this.decode(s);
         this._.v.int = this.#binToInt(this._.v.bin);
         this._.v.num = this.#binToNum(this._.v.bin);
-        if (this._.texted) {this._.v.txt = this.#binToTxt(b)}
-        this.#throwUnsafed();
+//        this._.v.int = this.#toInt(this._.v.bin);
+//        this._.v.num = this.#toNum(this._.v.bin);
     }
     fromInt(i) {
         if (!this.#isInt(i)) {throw new TypeError(`引数は0以上かつBigInt型プリミティブ値であるべきです。`)}
         this._.v.int = i;
+        //this._.v.bin = this.#intToBin(i);
+        //this._.v.bin = new Uint8Array(this.#addZeroByte(str, this.#intToBin(I)));
         this._.v.bin = new Uint8Array(this.#intToBin(I));
         this._.v.str = this.#binToStr(this._.v.bin);
         this._.v.num = this.#binToNum(this._.v.bin);
-        if (this._.texted) {this._.v.txt = this.#binToTxt(b)}
-        this.#throwUnsafed();
+//        this._.v.str = this.#toStr(this._.v.bin);
+//        this._.v.num = this.#toNum(this._.v.bin);
     }
     fromNum(n) {
         if (!this.#isNum(n)) {throw new TypeError(`引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`)}
         this._.v.num = n;
+        //this._.v.bin = this.#numToBin(n);
         this._.v.bin = new Uint8Array(this.#numToBin(n));
+        console.log(this._.v.bin);
         this._.v.str = this.#binToStr(this._.v.bin);
         this._.v.int = this.#binToInt(this._.v.bin);
-        if (this._.texted) {this._.v.txt = this.#binToTxt(b)}
-        this.#throwUnsafed();
+//        this._.v.str = this.#toStr(this._.v.bin);
+//        this._.v.int = this.#toInt(this._.v.bin);
     }
     #isBin(v) {return v instanceof Uint8Array && 0 < v.length}
     #isStr(v) {return 'string'===typeof v && 0 < v.length && ([...new Set(Array.from(v))].toString().match(this._.regexp))}
@@ -1445,10 +1571,8 @@ class BaseN {
     }
     #binToNum(b) {return Number(this.#binToInt(b))}
     #binToStr(b) {return this.#intToStr(this.#binToInt(b))}
-    #binToTxt(b) {return (new TextDecorder()).decode(b)}
-    #txtToBin(t) {return (new TextEncorder()).encode(t)}
     #intToStr(i) {// 大きな整数をBase62に変換
-        if (0n===i) {return this._.chars.en[0]}
+        if (0n===i) {return '0'}
         let str = '';
         while (i > 0n) {
             str = this.#enChars[Number(i % this._.radix.int)] + str;
@@ -1496,21 +1620,75 @@ class BaseN {
     }
     get bin() {return this._.v.bin}
     get str() {return this._.v.str}
-    get txt() {return this._.v.txt}
     get int() {return this._.v.int}
     get num() {return this._.v.num}
     set bin(v) {return this.fromBin(v)}
     set str(v) {return this.fromStr(v)}
-    set txt(v) {return this.fromTxt(v)}
     set int(v) {return this.fromInt(v)}
     set num(v) {return this.fromNum(v)}
-    get urlSafed() {return this._.urlSafed}
-    get numSafed() {return this._.numSafed}
-    get typeName() {return this._.typeName}
-    get full() {return `${this.typeName}:${this.str}`}
-    to(typeName, value) {return BaseCharsMaker.fromTypeName(typeName, value ?? this._.v.bin)}
 }
 
+/*
+class Base64 {
+    static encode(u8a) {return btoa(String.fromCharCode.apply(null, u8a))}
+    static decode(str) {
+        const decodedString = atob(str);
+        const u8a = new Uint8Array(decodedString.length);
+        for (let i=0; i<decodedString.length; i++) {
+            u8a[i] = decodedString.charCodeAt(i);
+        }
+        return u8a;
+    }
+    static encodeStr(str) {return this.encode((new TextEncoder()).encode(str))}
+    static decodeStr(str) {return (new TextDecoder()).decode(this.decode(str));}
+}
+class BaseN extends BaseCharBuilder {// 2〜36:toString, 64:Base64, 256:Base256
+    constructor(base=64, sortable=false, symbols=['+','/']) {
+        super(base, sortable, symbols);
+    }
+    fromString(str) {
+        if ('string'!==typeof str) {throw new TypeError(`strはString型プリミティブ値であるべきです。`)}
+        return Uint8Array.from(
+            str.split('').map(ch => {
+                if (!(c in this._.chars.de)) {throw Error("Cannot decode character '" + c.charCodeAt(0) + "', not Braille.")}
+                return this._.chars.de[c];
+            })
+        );
+    }
+    fromUint8Array(u8a) {
+        if (!(u8a instanceof Uint8Array)) {throw new TypeError(`引数はUint8Array型インスタンスであるべきです。`)}
+        return u8a.reduce((s, b)=>s+this._.chars.en[b], '');
+    }
+    toString() {
+
+    }
+    toUint8Array() {
+
+    }
+    static #toBase64(base64url) {// Base64URLをBase64に変換する
+        // 1. URLセーフな文字 '-', '_' をそれぞれ '+', '/' に戻す
+        const base64 = base64url.replace(/-/g, '+').replace(/_/g, '/');
+        const paddingNeeded = (4 - (base64.length % 4)) % 4;
+        return base64 + '='.repeat(paddingNeeded);
+    }
+    static encode(uint8array) {
+        if (!(uint8array instanceof Uint8Array)) {throw new TypeError(`引数はUint8Array型インスタンスであるべきです。`)}
+        return uint8Array.reduce((acc, b) => acc + this.#ENCODE_CHAR[b], '');
+    }
+    static decode(base64str, symbolType) {
+        if ('string'!==typeof base64str) {throw new TypeError(`base64strはString型プリミティブ値であるべきです。`)}
+        if (undefined===symbolType) {symbolType = 'BASE'}
+        const [ENCODE_CHAR, DECORD_CHAR, SYMBOL] = this.#getChars(symbolType);
+        return Uint8Array.from(
+            base256str.split('').map(ch => {
+                if (!(ch in this.#DECORD_CHAR)) {throw Error("Cannot decode character '" + ch.charCodeAt(0) + "', not Braille.")}
+                return this.#DECORD_CHAR[ch];
+            })
+        );
+    }
+
+}
+*/
 window.Integer = Integer;
 window.Float = Float;
 window.Obs = new Proxy({

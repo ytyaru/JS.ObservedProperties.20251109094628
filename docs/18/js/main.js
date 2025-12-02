@@ -1401,6 +1401,48 @@ window.addEventListener('DOMContentLoaded', (event) => {
     a.e(TypeError, `radixは2〜64のNumber型整数値であるべきです。`, ()=>new Obs.U.SortBase(65));
     a.e(TypeError, `radixは2〜64のNumber型整数値であるべきです。`, ()=>new Obs.U.SortBase('64'));
     a.e(TypeError, `radixは2〜64のNumber型整数値であるべきです。`, ()=>new Obs.U.SortBase(64n));
+//    a.e(TypeError, `urlSafedは真偽値であるべきです。radix=64時、真なら-_偽なら{}の記号を使用します。`, ()=>new Obs.U.SortBase(64, null));
+    a.e(TypeError, `urlSafedは真偽値であるべきです。radix=64時、真なら-_偽なら{}の記号を使用します。`, ()=>new Obs.U.SortBase(64, ''));
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64, null);
+        return b.urlSafed;
+    });
+    //a.e(TypeError, `numSafedは真偽値であるべきです。真なら0〜Number.MAX_SAFE_INTEGERの範囲外値を代入時常に例外発生します。偽ならnumに範囲外値を代入しない限り許可します。`, ()=>new Obs.U.SortBase(64, false, null));
+    a.e(TypeError, `numSafedは真偽値であるべきです。真なら0〜Number.MAX_SAFE_INTEGERの範囲外値を代入時常に例外発生します。偽ならnumに範囲外値を代入しない限り許可します。`, ()=>new Obs.U.SortBase(64, false, ''));
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64, false, null);
+        return !b.numSafed;
+    });
+    // radix省略
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase();
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase();
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase();
+        b.num = 0;
+        console.log(64===b.radix, 0===b.bin.length, '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase();
+        b.num = 1;
+        console.log(64===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase();
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 7===b.bin.length && 31===b.bin[0]  && 255===b.bin[1] && 'Uzzzzzzzz'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    /*
     a.t(()=>{
         const b = new Obs.U.SortBase();
         b.num = 0;
@@ -1419,16 +1461,438 @@ window.addEventListener('DOMContentLoaded', (event) => {
         const b = new Obs.U.SortBase();
         b.num = -1;
     });
-    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
-        const b = new Obs.U.SortBase();
-        b.num = Number.MAX_SAFE_INTEGER+1;
-    });
     a.t(()=>{
         const b = new Obs.U.SortBase();
         b.num = Number.MAX_SAFE_INTEGER;
         console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
         return 64===b.radix && 7===b.bin.length && 31===b.bin[0]  && 255===b.bin[1] && 'V}}}}}}}}'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
     });
+    */
+    // 64
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64);
+        b.num = 0;
+        console.log(64===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64);
+        b.num = 1;
+        console.log(64===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(64);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(64);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 7===b.bin.length && 31===b.bin[0]  && 255===b.bin[1] && 'Uzzzzzzzz'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 62
+    a.t(()=>{
+        const b = new Obs.U.SortBase(62);
+        b.num = 1;
+        console.log(62===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 62===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(62);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(62);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(62);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 62===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && 'fFgnDxSe7'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 36
+    a.t(()=>{
+        const b = new Obs.U.SortBase(36);
+        b.num = 1;
+        console.log(36===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 36===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(36);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(36);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(36);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 36===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '2GOSA7PA2GV'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 32
+    a.t(()=>{
+        const b = new Obs.U.SortBase(32);
+        b.num = 1;
+        console.log(32===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 32===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(32);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(32);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(32);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 32===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '7VVVVVVVVVV'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 16
+    a.t(()=>{
+        const b = new Obs.U.SortBase(16);
+        b.num = 1;
+        console.log(16===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 16===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(16);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(16);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(16);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 16===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '1FFFFFFFFFFFFF'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 10
+    a.t(()=>{
+        const b = new Obs.U.SortBase(10);
+        b.num = 1;
+        console.log(10===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 10===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(10);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(10);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(10);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 10===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '9007199254740991'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 8
+    a.t(()=>{
+        const b = new Obs.U.SortBase(8);
+        b.num = 1;
+        console.log(8===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 8===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(8);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(8);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(8);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 8===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '377777777777777777'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 2
+    a.t(()=>{
+        const b = new Obs.U.SortBase(2);
+        b.num = 1;
+        console.log(2===b.radix, 1===b.bin.length, 0===b.bin[0], '1'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 2===b.radix && 1===b.bin.length && 1===b.bin[0] && '1'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(2);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(2);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(2);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 2===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '11111111111111111111111111111111111111111111111111111'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+
+
+    // urlSafed
+    // 64
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64, true);
+        b.num = 0;
+        console.log(64===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64, true);
+        b.num = 1;
+        console.log(64===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(64, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(64, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(64, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 64===b.radix && 7===b.bin.length && 31===b.bin[0]  && 255===b.bin[1] && 'Uzzzzzzzz'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 62
+    a.t(()=>{
+        const b = new Obs.U.SortBase(62, true);
+        b.num = 0;
+        console.log(62===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 62===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(62, true);
+        b.num = 1;
+        console.log(62===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 62===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(62, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(62, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(62, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 62===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && 'dEelCvRc6'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 36
+    a.t(()=>{
+        const b = new Obs.U.SortBase(36, true);
+        b.num = 0;
+        console.log(36===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 36===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(36, true);
+        b.num = 1;
+        console.log(36===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 36===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(36, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(36, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(36, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 36===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '1FNR96O91FU'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 32
+    a.t(()=>{
+        const b = new Obs.U.SortBase(32, true);
+        b.num = 0;
+        console.log(32===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 32===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(32, true);
+        b.num = 1;
+        console.log(32===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 32===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(32, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(32, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(32, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 32===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '6UUUUUUUUUU'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 16
+    a.t(()=>{
+        const b = new Obs.U.SortBase(16, true);
+        b.num = 0;
+        console.log(16===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 16===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(16, true);
+        b.num = 1;
+        console.log(16===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 16===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(16, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(16, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(16, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 16===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '0EEEEEEEEEEEEE'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 10
+    a.t(()=>{
+        const b = new Obs.U.SortBase(10, true);
+        b.num = 0;
+        console.log(10===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 10===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(10, true);
+        b.num = 1;
+        console.log(10===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 10===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(10, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(10, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(10, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 10===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '8--608814363-880'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 8
+    a.t(()=>{
+        const b = new Obs.U.SortBase(8, true);
+        b.num = 0;
+        console.log(8===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 8===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(8, true);
+        b.num = 1;
+        console.log(8===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 8===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(8, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(8, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(8, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 8===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '266666666666666666'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+    // 2
+    a.t(()=>{
+        const b = new Obs.U.SortBase(2, true);
+        b.num = 0;
+        console.log(2===b.radix, 1===b.bin.length, 0===b.bin[0], '-'===b.str, 0n===b.int, 0===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 2===b.radix && 1===b.bin.length && 0===b.bin[0] && '-'===b.str && 0n===b.int && 0===b.num;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(2, true);
+        b.num = 1;
+        console.log(2===b.radix, 1===b.bin.length, 0===b.bin[0], '0'===b.str, 1n===b.int, 1===b.num);
+        console.log(b.radix, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 2===b.radix && 1===b.bin.length && 1===b.bin[0] && '0'===b.str && 1n===b.int && 1===b.num;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(2, true);
+        b.num = -1;
+    });
+    a.e(TypeError, `引数は0以上かつNumber.isSafeInteger()を返すNumber型プリミティブ値であるべきです。`, ()=>{
+        const b = new Obs.U.SortBase(2, true);
+        b.num = Number.MAX_SAFE_INTEGER+1;
+    });
+    a.t(()=>{
+        const b = new Obs.U.SortBase(2, true);
+        b.num = Number.MAX_SAFE_INTEGER;
+        console.log(b.radix, b.bin, b.bin.length, b.bin[0], b.str, b.int, b.num);
+        return 2===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '00000000000000000000000000000000000000000000000000000'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
+    });
+
+
+
+
+
+
+
 
     // Base64系
     a.t(()=>{
