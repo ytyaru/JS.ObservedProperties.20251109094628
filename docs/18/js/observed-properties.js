@@ -1186,9 +1186,24 @@ class SortableBaseN {// 出力されるASCII文字を辞書順にソート可。
         this._.regexp = new RegExp(`^[${R}]$`);
     }
     get #enChars() {return this._.chars.en}
+    #getPaddingNum(I, radix) {// 値Iが基数radixの時、必要なパディング数を返す（I,radixはBigInt型。戻り値はNumber型）
+        if (0n===I) {return 1;} // 0または1を扱う特殊なケース
+        // BigIntを使い対数計算
+        let padding = 0n;
+        let power = 1n;
+        while (power <= I) {
+            power *= radix; //power *= BigInt(radix);
+            padding++;
+        }
+        return Number(padding); // パディング数はNumber型で返しても一般的に問題ない
+    }
     encode(bytes) {
         const I = this.#binToInt(bytes);
-        const S = this.#addZeroStr(bytes, this.#intToStr(I));
+
+//        const M = I % 256n; // 余り
+//        const M = I % this._.radix.int; // 余り
+//        const S = this.#addZeroStr(bytes, this.#intToStr(I));
+        const S = this.#addZeroStr(bytes, this.#intToStr(I), this.#getPaddingNum(I, this._.radix.int));
         return S || this.#enChars[0];
     }
     decode(str) {
@@ -1350,6 +1365,7 @@ class BaseCharsMaker {
     }
 }
 class BaseN {
+    static get #PAD() {return '='} // base32,base64で使用する長さ調整用パディング文字
     static fromTypeName(typeName, value) {return BaseCharsMaker.fromTypeName(typeName, value)}
     static fromFull(full) {
         if ('string'!==typeof full) {throw new TypeError(`fullはString値であるべきです。`)}
@@ -1476,6 +1492,7 @@ class BaseN {
         return bytes;
     }
     #numToBin(n) {return this.#intToBin(BigInt(n))}
+    /*
     #addZeroStr(bytes, str) {// 元のバイト配列の先頭のゼロバイトを考慮して、結果の長さを調整
         let S = str;
         for (let i=0; i<bytes.length && bytes[i]===0; i++) {S = this.#enChars[0] + S}
@@ -1484,6 +1501,27 @@ class BaseN {
     #addZeroByte(str, bytes) {// 元の文字列の先頭の "0" の数を考慮して、先頭にゼロバイトを追加
         for (let i=0; i<str.length && str[i]===this.#enChars[0]; i++) {bytes.unshift(0);}
         return bytes;
+    }
+    */
+    // 元のバイト配列の先頭のゼロバイトを考慮して、結果の長さを調整
+//    #addZeroStr(bytes, str, padNum) {return this._.sortable ? this.#enChars[0].repeat(padNum) + str : str + this.#PAD.repeat(padNum)};
+    #addZeroStr(bytes, str, padNum) {// 元のバイト配列の先頭のゼロバイトを考慮して、結果の長さを調整
+        if (this._.sortable) {
+            return this.#enChars[0].repeat(padNum) + str;
+//            let S = str;
+//            for (let i=0; i<bytes.length && bytes[i]===0; i++) {S = this.#enChars[0] + S}
+//            return S;
+        } else {
+            return str + BaseN.#PAD.repeat(padNum);
+        }
+    }
+    #addZeroByte(str, bytes) {// 元の文字列の先頭の "0" の数を考慮して、先頭にゼロバイトを追加
+        if (this._.sortable) {
+            for (let i=0; i<str.length && str[i]===this.#enChars[0]; i++) {bytes.unshift(0);}
+            return bytes;
+        } else {
+
+        }
     }
     get radix() {return this._.radix.num}
 //    get value() {return this._.v}
