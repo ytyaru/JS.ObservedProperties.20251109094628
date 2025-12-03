@@ -1887,6 +1887,142 @@ window.addEventListener('DOMContentLoaded', (event) => {
         return 2===b.radix && 7===b.bin.length && 31===b.bin[0] && 255===b.bin[1] && '00000000000000000000000000000000000000000000000000000'===b.str && BigInt(Number.MAX_SAFE_INTEGER)===b.int && Number.MAX_SAFE_INTEGER===b.num;
     });
 
+    // CSID
+    a.t(()=>{
+        const id = new Obs.U.CSID();
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,64));
+        console.log(id.name);
+        console.log(id.full);
+        console.log(id);
+        console.log(`${id}`);
+        console.log(id.full.startsWith('csid128-64-'));
+        console.log('csid128-64-'.startsWith(id.full));
+        return 128===id.bit && 64===id.radix && 128/8===id.bin.length && id.str.length<=22 && id.str.length<=Obs.U.CSID.calcLength(128,64) && 'csid128-64'===id.name && id.full.startsWith(`csid128-64-`) && `${id}`.startsWith(`csid128-64-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 64);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,64));
+        return 128===id.bit && 64===id.radix && 128/8===id.bin.length && id.str.length<=22 && id.str.length<=Obs.U.CSID.calcLength(128,64) && 'csid128-64'===id.name && id.full.startsWith(`csid128-64-`) && `${id}`.startsWith(`csid128-64-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 62);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,62));
+        return 128===id.bit && 62===id.radix && 128/8===id.bin.length && id.str.length<=22 && id.str.length<=Obs.U.CSID.calcLength(128,62) && 'csid128-62'===id.name && id.full.startsWith(`csid128-62-`) && `${id}`.startsWith(`csid128-62-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 58);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,58));
+        return 128===id.bit && 58===id.radix && 128/8===id.bin.length && id.str.length<=22 && id.str.length<=Obs.U.CSID.calcLength(128,58) && 'csid128-58'===id.name && id.full.startsWith(`csid128-58-`) && `${id}`.startsWith(`csid128-58-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 36);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,36));
+        return 128===id.bit && 36===id.radix && 128/8===id.bin.length && id.str.length<=25 && id.str.length<=Obs.U.CSID.calcLength(128,36) && 'csid128-36'===id.name && id.full.startsWith(`csid128-36-`) && `${id}`.startsWith(`csid128-36-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 32);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,32));
+        return 128===id.bit && 32===id.radix && 128/8===id.bin.length && id.str.length<=26 && id.str.length<=Obs.U.CSID.calcLength(128,32) && 'csid128-32'===id.name && id.full.startsWith(`csid128-32-`) && `${id}`.startsWith(`csid128-32-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 16);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,16));
+        return 128===id.bit && 16===id.radix && 128/8===id.bin.length && id.str.length<=32 && id.str.length<=Obs.U.CSID.calcLength(128,16) && 'csid128-16'===id.name && id.full.startsWith(`csid128-16-`) && `${id}`.startsWith(`csid128-16-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 10);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,10));
+        return 128===id.bit && 10===id.radix && 128/8===id.bin.length && id.str.length<=39 && id.str.length<=Obs.U.CSID.calcLength(128,10) && 'csid128-10'===id.name && id.full.startsWith(`csid128-10-`) && `${id}`.startsWith(`csid128-10-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 8);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,8));
+        return 128===id.bit && 8===id.radix && 128/8===id.bin.length && id.str.length<=43 && id.str.length<=Obs.U.CSID.calcLength(128,8) && 'csid128-8'===id.name && id.full.startsWith(`csid128-8-`) && `${id}`.startsWith(`csid128-8-`);
+    });
+    a.t(()=>{
+        const id = new Obs.U.CSID(128, 2);
+        console.log(id);
+        console.log(id.str);
+        console.log(id.int);
+        console.log(id.num);
+        console.log(id.bin);
+        console.log(id.bin.length/8);
+        console.log(id.str.length, Obs.U.CSID.calcLength(128,2));
+        return 128===id.bit && 2===id.radix && 128/8===id.bin.length && id.str.length<=128 && id.str.length<=Obs.U.CSID.calcLength(128,2) && 'csid128-2'===id.name && id.full.startsWith(`csid128-2-`) && `${id}`.startsWith(`csid128-2-`);
+    });
+
+    a.e(TypeError, `fullはハイフン付き文字列であるべきです。`, ()=>Obs.U.CSID.from());
+    a.e(TypeError, `fullは不正値です。/^csid(?<bit>\\d{1,})\\-(?<radix>\\d{1,})\\-(?<str>.+)$/ の書式に合わせてください。`, ()=>Obs.U.CSID.from('-'));
+    a.t(()=>{
+        const name = 'csid128-64';
+        const str = 'HGdMP2aUbXgS3tpeiRyOQ';
+        const id = Obs.U.CSID.from(`${name}-${str}`);
+        return 128===id.bit && 64===id.radix && 128/8===id.bin.length && id.str.length<=22 && id.str.length<=Obs.U.CSID.calcLength(128,64) && name===id.name && str===id.str && id.full===`${name}-${str}` && `${id}`===`${name}-${str}`;
+    });
+
+
+
+
+
+
+
+
+
+
 
 
 
