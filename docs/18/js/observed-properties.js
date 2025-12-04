@@ -1551,6 +1551,11 @@ class BaseN {
 // 乱数(PRNG:疑似乱数, CSPRNG:暗号学的安全乱数)
 const prng = ()=> Math.random() // 疑似乱数。シード値を変更不可だが起動時刻と思われ次の値を推測可。0〜1未満のNumber型実数。
 const prng32 = ()=> Math.trunc(prng() * 0x100000000);
+const prng32MinMax = (min, max) => {
+    const r  = crypto.getRandomValues(new Uint32Array(1))[0] / 4294967295; // Math.random()
+    min = Math.ceil(min); max = Math.floor(max);
+    return Math.floor(r * (max - min + 1)) + min;
+};
 //const csprng = (bit=128)=>window.crypto.getRandomValues(new Uint8Array(bit)); // 暗号学的に安全な乱数。次の値が予測困難。
 const csprng = (bit=128)=>window.crypto.getRandomValues(new Uint8Array(Math.ceil(bit/8))); // 暗号学的に安全な乱数。次の値が予測困難。
 const csprng32 = (max=0xFFFFFFFF)=>{
@@ -1559,6 +1564,75 @@ const csprng32 = (max=0xFFFFFFFF)=>{
     window.crypto.getRandomValues(array);
     return array[0] % (max + 1);
 }
+const _csprngMinMaxCheck = (min, max)=>{// min,maxが32bit範囲内で大小関係を保った正数か確認する
+    //if (Number.isSafeInteger(min) && Number.isSafeInteger(max) && 0<=min && max<2**32) {throw new TypeError(`minとmaxはNumber型整数値であるべきです。minは0以上max以下、maxは2**32(4294967296)未満であるべきです。:min:${min}, max:${max}`)}
+    if (Number.isSafeInteger(min) && Number.isSafeInteger(max)) {throw new TypeError(`minとmaxはNumber型整数値であるべきです。minは0以上max以下、maxは2**32(4294967296)未満であるべきです。:min:${min}, max:${max}`)}
+    if (min < 0) {throw new RangeError(`minは0以上のNumber型整数値であるべきです。:min:${min}`)}
+    if (4294967296 <= max) {throw new RangeError(`maxは0以上のNumber型整数値であるべきです。:max:${max}`)}
+    if (max <= min) {throw new RangeError(`minとmaxは1以上の差があるべきです。:min:${min}, max:${max}`)}
+}
+const _csprngMinMaxRnd = (min, max)=>{return max < 256 ? new Uint8Array(1) : (max < 65536 ? new Uint16Array(1) : new Uint32Array(1))}// 32bit範囲内で均等分布の乱数を返す
+/*
+const csprngMinMaxRnd(min, max) {// 32bit範囲内で均等分布の乱数を返す
+    return max < 256 ? new Uint8Array(1) : (max < 65536 ? new Uint16Array(1) : new Uint32Array(1));
+//    if (max < 256) {return new Uint8Array(1)}
+//    else if (max < 65536) {return new Uint16Array(1)}
+//    else if (max < 4294967296) {return new Uint32Array(1)}
+//    else {}// ここは例外発生して通らないはず
+}
+*/
+// 32bitまでの間にある指定した開始〜終了までの範囲の数において、偏りが出ないよう均等分布させた乱数を返す。
+// 例えばサイコロ1〜6を出すとき2^8=256(0〜255)の乱数から算出するが、256 % 6 = 4 となり0でない場合は偏りが出る。よってrnd % 6では偏るため他の方法で算出する。
+// すなわち範囲内の数が出るまで繰り返す。サイコロなら0〜255の乱数のうち1〜6の値が出るまで乱数を引き続ける。これにて偏りが無くなり均等分布になる。
+const csprng32MinMax = (min, max)=>{
+    _csprngMinMaxCheck(min, max);
+    const b = _csprngMinMaxRnd(min, max); // 8,16,32bitのいずれかのバイナリ配列を取得する
+    let r = -1;
+    do {r = crypto.getRandomValues(b)[0];} while(r > max || r < min); // 暗号論的疑似乱数を生成する。範囲内値が出現するまで繰り返す。
+//    while (r > max || r < min) {r = crypto.getRandomValues(b)[0];} // 暗号論的疑似乱数を生成する。範囲内値が出現するまで繰り返す。
+    return r;
+}
+const _calcMask = (range)=>{
+   if (range < -9007199254740991 || range > 9007199254740991) {throw new RangeError(`minとmaxの差は±9007199254740991以内であるべきです。`)}
+    let bitsNeeded = 0;
+    let bytesNeeded = 0;
+    let mask = 1;
+    while (range > 0) {
+        if (bitsNeeded % 8 === 0) {bytesNeeded += 1;}
+        bitsNeeded += 1;
+        mask = mask << 1 | 1;
+        range = range >>> 1;
+    }
+    return {bitsNeeded:bitsNeeded, bytesNeeded:bytesNeeded, mask:mask};
+};
+const csprngNumMinMax = (min, max) => {// Number型範囲内なら正数負数問わず乱数を返す(Number.SAFE_MIN_INTEGER〜Number.SAFE_MAX_INTEGER)
+    if (![min,max].every(v=>Number.isSafeInteger(v))) {throw new TypeError(`min,maxはNumber.isSafeInteger()が真を返す値であるべきです。`)}
+    if (max <= min) {throw new RangeError(`min < maxであるべきです。`)}
+    const range = max - min;
+    const {bitsNeeded, bytesNeeded, mask} = _calcMask(range);
+    /*
+    if (range < -9007199254740991 || range > 9007199254740991) {throw new RangeError(`minとmaxの差は±9007199254740991以内であるべきです。`)}
+    let bitsNeeded = 0;
+    let bytesNeeded = 0;
+    let mask = 1;
+    let tmp = range;
+    while (tmp > 0) {
+        if (bitsNeeded % 8 === 0) {bytesNeeded += 1;}
+        bitsNeeded += 1;
+        mask = mask << 1 | 1;
+        tmp = tmp >>> 1;
+    }
+    */
+    const b = crypto.getRandomValues(min < 0 ? new Int8Array(bytesNeeded) : new Uint8Array(bytesNeeded));
+    let r = 0;
+    for (let i=0; i<bytesNeeded; i++) {r |= r[i] << 8 * i;}
+    r = r & mask;
+    return r <= range ? min+r : prngNumMinMax(min, max);
+}
+
+// first make math random use crypto instead
+// typical biased range 
+/*
 class CSID {// CSPRNG:暗号学的安全乱数による識別子を生成する（タイムスタンプやフィンガープリント等は一切なし）。使用文字は最大64種。ソート可能。パディング無し。
     static from(full) {
         if (!('string'===typeof full && -1<full.indexOf('-'))) {throw new TypeError(`fullはハイフン付き文字列であるべきです。`)}
@@ -1658,6 +1732,106 @@ class CSID {// CSPRNG:暗号学的安全乱数による識別子を生成する�
     #numToBin(n) {return this.#intToBin(BigInt(n))}
 
 }
+*/
+class CSID {// CSPRNG:暗号学的安全乱数による識別子を生成する（タイムスタンプやフィンガープリント等は一切なし）。使用文字は最大64種。ソート可能。パディング無し。
+    static from(full) {
+        if (!('string'===typeof full && -1<full.indexOf('-'))) {throw new TypeError(`fullはハイフン付き文字列であるべきです。`)}
+        const R = /^csid(?<bit>\d{1,})\-(?<radix>\d{1,})\-(?<str>.+)$/;
+        const m = full.match(R);
+        if (!m) {throw new TypeError(`fullは不正値です。${R} の書式に合わせてください。`)}
+        console.log(m);
+        return new CSID(parseInt(m.groups.bit), parseInt(m.groups.radix), m.groups.str);
+    }
+    static calcLength(bit, radix) {// 入力ビット数と基数に基づいて、エンコード後の文字数を計算する（パディング含む）。
+        if (radix < 2 || radix > 256) {throw new TypeError(`radixは2〜256のNumber型整数値であるべきです。`)}
+        const bitsPerChar = Math.log2(radix); // 1文字あたりのビット数を計算
+        return Math.ceil(bit / bitsPerChar); // 総ビット数を1文字あたりのビット数で割り、小数点以下を切り上げ。パディングを考慮するためMath.ceilを使用
+    }
+    constructor(bit=128, radix=64, str=undefined) {// 128bitなら58radixでも22字。64radixでも22字。
+        console.log(bit, radix, str);
+        if (!(Number.isSafeInteger(bit) && 0<bit)) {throw new TypeError(`bitは0より大きいNumber整数値であるべきです。`)}
+        if (!(Number.isSafeInteger(radix) && 2<=radix && radix<=64)) {throw new TypeError(`radixは2〜64のNumber整数値であるべきです。`)}
+        this._ = {bit:{num:bit, int:BigInt(bit)}, v:{bin:null, str:null, int:null, num:null, txt:null}, radix:{num:radix, int:BigInt(radix)}, chars:{en:null, de:null}};
+        const [N,A,a] = ['0123456789','ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'];
+        const F = `${N}${A}${a}`; // 数英大小62字
+        const base58 = Array.from('0OIl').reduce((s,v)=>s.replace(v,''), F); // 0,O,I,lの4字を除外した58字
+//        const base58 = F.replace('0','').replace('O','').replace('I','').replace('l',''); // 0,O,I,l,+,/の6字を除外
+//        const base58 = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'; // 0,O,I,l,+,/の6字を除外
+//        this._.chars.en = (58===radix ? base58 : (62 < radix ? `-${N}${A}_${a}` : `${N}${A}${a}`)).slice(0, radix);
+        this._.chars.en = (58===radix ? base58 : (62 < radix ? `-${N}${A}_${a}` : F)).slice(0, radix);
+        this._.v.bin = ('string'===typeof str ? this.#intToBin(this.#strToInt(str)) : csprng(bit));
+        //if 'string'===
+        //this._ = {v:{bin:csprng(bit), str:null, int:null, num:null, txt:null}, radix:{num:radix, int:BigInt(radix)}, chars:{en:null, de:null}};
+//        this._ = {bit:{num:bit, int:BigInt(bit)}, v:{bin:('string'===typeof str ? this.#intToBin(this.#strToInt(str)) : csprng(bit)), str:null, int:null, num:null, txt:null}, radix:{num:radix, int:BigInt(radix)}, chars:{en:null, de:null}};
+//        this._.chars.en = (62 < radix ? `-${N}${A}_${a}` : `${N}${A}${a}`).slice(0, radix);
+        this._.v.int = this.#binToInt(this._.v.bin);
+        this._.v.str = this.#intToStr(this._.v.int);
+        this._.v.num = Number(this._.v.int);
+    }
+    get bit() {return this._.bit.num}
+    get radix() {return this._.radix.num}
+    get bin() {return this._.v.bin}
+    get str() {return this._.v.str}
+    get int() {return this._.v.int}
+    get num() {return this._.v.num}
+    toString() {return this.full}
+//    get valueOf() {return this.bin}
+    get name() {return `csid${this.bit}-${this.radix}`}
+    get full() {return `${this.name}-${this.str}`}
+//    #encode() {return this.#intToStr(this.#binToInt(this._.v.bin));}
+//    #encode() {
+//        const I = this.#binToInt(this._.v.bin);
+        //const S = this.#addZeroStr(bytes, this.#intToStr(I));
+//        const S = this.#intToStr(I);
+//        return S || this.#enChars[0];
+//        return this.#intToStr(I);
+//    }
+    #isBin(v) {return v instanceof Uint8Array && 0 < v.length}
+    #isStr(v) {return 'string'===typeof v && 0 < v.length && ([...new Set(Array.from(v))].toString().match(this._.regexp))}
+    #isNum(v) {return Number.isSafeInteger(v) && 0 <= v}
+    #isInt(v) {return 'bigint'===typeof v && 0n <= v}
+    #binToInt(b) {// バイト配列を一つの大きな整数に変換
+        let I = 0n; // 64ビット整数を扱えるBigIntを使用
+        for (let i=0; i<b.length; i++) {I = (I << 8n) | BigInt(b[i])}
+        return I;
+    }
+    #binToNum(b) {return Number(this.#binToInt(b))}
+    #binToStr(b) {return this.#intToStr(this.#binToInt(b))}
+    #binToTxt(b) {return (new TextDecorder()).decode(b)}
+    #txtToBin(t) {return (new TextEncorder()).encode(t)}
+    #intToStr(i) {// 大きな整数をBaseNに変換
+//        if (0n===i) {return this._.chars.en[0]}
+        let str = '';
+        while (i > 0n) {
+            str = this._.chars.en[Number(i % this._.radix.int)] + str;
+            i = i / this._.radix.int;
+        }
+        return str || this._.chars.en[0];
+        //return str;
+    }
+    #strToInt(s) {// BaseN文字列を一つの大きな整数に変換
+        let I = 0n;
+        for (let i=0; i<s.length; i++) {
+            const char = s[i];
+            const index = this._.chars.en.indexOf(char);
+            if (index === -1) {throw new TypeError(`不正なBase62文字が含まれています:${char}`);}
+            I = (I * this._.radix.int) + BigInt(index);
+        }
+        return I;
+    }
+    #intToBin(i) {// 大きな整数をバイト配列に変換
+        if (0n===i) {return [0]}
+        const bytes = [];
+        while (i > 0n) {
+            bytes.unshift(Number(i & 0xFFn));
+            i = i >> 8n;
+        }
+        return bytes;
+    }
+    #numToBin(n) {return this.#intToBin(BigInt(n))}
+
+}
+
 
 window.Integer = Integer;
 window.Float = Float;

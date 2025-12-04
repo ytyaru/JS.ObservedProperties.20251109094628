@@ -2004,7 +2004,6 @@ window.addEventListener('DOMContentLoaded', (event) => {
         console.log(id.str.length, Obs.U.CSID.calcLength(128,2));
         return 128===id.bit && 2===id.radix && 128/8===id.bin.length && id.str.length<=128 && id.str.length<=Obs.U.CSID.calcLength(128,2) && 'csid128-2'===id.name && id.full.startsWith(`csid128-2-`) && `${id}`.startsWith(`csid128-2-`);
     });
-
     a.e(TypeError, `fullはハイフン付き文字列であるべきです。`, ()=>Obs.U.CSID.from());
     a.e(TypeError, `fullは不正値です。/^csid(?<bit>\\d{1,})\\-(?<radix>\\d{1,})\\-(?<str>.+)$/ の書式に合わせてください。`, ()=>Obs.U.CSID.from('-'));
     a.t(()=>{
