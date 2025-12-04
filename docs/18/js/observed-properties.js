@@ -1831,7 +1831,90 @@ class CSID {// CSPRNG:暗号学的安全乱数による識別子を生成する�
     #numToBin(n) {return this.#intToBin(BigInt(n))}
 
 }
-
+class BitReader {
+    constructor(arrayBuffer) {
+        // バイトデータをUint8Arrayで扱います
+        this.dataView = new DataView(arrayBuffer);
+        this.byteOffset = 0; // 現在のバイト位置
+        this.bitOffset = 0;  // 現在のバイト内でのビット位置 (0-7)
+    }
+    /**
+     * 指定されたビット数のデータを読み込み、数値として返します。
+     * @param {number} numBits - 読み込むビット数 (1から32までを推奨)
+     * @returns {number} 読み込まれたデータ
+     */
+    readBits(numBits) {
+        if (numBits === 0) return 0;
+        let value = 0;
+        let bitsRead = 0;
+        while (bitsRead < numBits) {
+            // 現在のバイトを取得
+            const currentByte = this.dataView.getUint8(this.byteOffset);
+            // 現在のバイトから読み取れる残りのビット数
+            const bitsInCurrentByte = 8 - this.bitOffset;
+            // 今回の処理で読み取るビット数 (numBitsから残りのbitsReadを引いたものと比較)
+            const bitsToReadNow = Math.min(numBits - bitsRead, bitsInCurrentByte);
+            // 必要なビットだけを抽出し、結果のvalueに結合する
+            // 1. 読み取り開始位置より前のビットをマスクで隠す
+            const maskedByte = currentByte & (0xFF >> this.bitOffset);
+            // 2. 必要なビット位置まで右シフト
+            const extractedBits = maskedByte >> (bitsInCurrentByte - bitsToReadNow);
+            // 3. 結果のvalueに左シフトして結合
+            value = (value << bitsToReadNow) | extractedBits;
+            // オフセットを更新
+            this.bitOffset += bitsToReadNow;
+            if (this.bitOffset === 8) {
+                this.bitOffset = 0;
+                this.byteOffset++;
+            }
+            bitsRead += bitsToReadNow;
+        }
+        // JavaScriptのビット演算は32ビット符号付き整数として扱われる点に注意
+        return value >>> 0; // 符号なし整数として返す場合は >>> 0 を使用
+    }
+    read(bits) {
+        if (0===bits) return 0;
+        const bitValues = [];
+        let value = 0;
+        let bitsRead = 0;
+        while (bitsRead < bits) {
+            const currentByte = this.dataView.getUint8(this.byteOffset); // 現在のバイトを取得
+            const bitsInCurrentByte = 8 - this.bitOffset; // 現在のバイトから読み取れる残りのビット数
+            const bitsToReadNow = Math.min(bits - bitsRead, bitsInCurrentByte); // 今回の処理で読み取るビット数 (bitsから残りのbitsReadを引いたものと比較)
+            // 必要なビットだけを抽出し、結果のvalueに結合する
+            const maskedByte = currentByte & (0xFF >> this.bitOffset); // 1. 読み取り開始位置より前のビットをマスクで隠す
+//            yield maskedByte;
+            bitValues.push(maskedByte >>> 0); // 符号なし整数化
+            const extractedBits = maskedByte >> (bitsInCurrentByte - bitsToReadNow); // 2. 必要なビット位置まで右シフト
+            value = (value << bitsToReadNow) | extractedBits; // 3. 結果のvalueに左シフトして結合
+            // オフセットを更新
+            this.bitOffset += bitsToReadNow;
+            if (this.bitOffset === 8) {
+                this.bitOffset = 0;
+                this.byteOffset++;
+            }
+            bitsRead += bitsToReadNow;
+        }
+        // JavaScriptのビット演算は32ビット符号付き整数として扱われる点に注意
+//        return value >>> 0; // 符号なし整数として返す場合は >>> 0 を使用
+        return ({all:value >>> 0, bitValues:bitValues});
+    }
+}
+class RID128 {// モジュロバイアスのない計算（6bitずつ読み込んで余った2bitをそのまま出す(2bit以降の文字が絶対出現しないのでバイアスが出る)）
+    static #C = Array.from('-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz'); // ASCIIコード順。-_はURLセーフ文字。
+    constructor() {
+        const b = crypto.getRandomValues(new Uint8Array(128));
+        const reader = new BitReader(b.buffer);
+        const v = reader.read(6);
+        console.log(v);
+        console.log(v.all);
+        console.log(v.bitValues);
+        this._ = {v:{bin:b, str:v.bitValues.map(x=>RID128.#C[x])}};
+    }
+    get bin() {return this._.v.bin}
+    get str() {return this._.v.str}
+    toString() {return this._.v.str}
+}
 
 window.Integer = Integer;
 window.Float = Float;
@@ -1979,6 +2062,7 @@ console.assert(3.14===MATH.PI);
         Base: BaseFactory,
         SortBase: SortableBaseN,
         CSID: CSID,
+        RID128: RID128,
     }
 }, {
     get:(target, prop, receiver)=>{
