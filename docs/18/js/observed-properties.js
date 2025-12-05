@@ -1915,7 +1915,14 @@ class RID128 {// モジュロバイアスのない計算（6bitずつ読み込�
     get str() {return this._.v.str}
     toString() {return this._.v.str}
 }
-
+/*
+class ID128 {// 128bitデータ長を使ってBase64URL表現を返す（モジュロバイアス無し）
+    static get() {return this.#uint8ToBase64URL(this.#random)}
+    static get #random() {return crypto.getRandomValues(new Uint8Array(128/8))}
+    #uint8ToBase64(bytes) {return window.btoa(bytes.reduce((b,v)=>b+String.fromCharCode(v),''))}
+    #uint8ToBase64URL(bytes) {return this.#uint8ToBase64(bytes).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');}
+}
+*/
 window.Integer = Integer;
 window.Float = Float;
 window.Obs = new Proxy({

@@ -142,3 +142,85 @@ calcLength(48, 64)
 
 この手法により、最終的に選択される値はすべて等しい確率で出現するため、バイアスのない均一な乱数を得ることができます。 
 プログラミングでの具体的な実装例については、Zennの記事なども参考になります。 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+js nanoIDのうち次のURLで示すコード部分ではリジェクションサンプリングしていないように見えますが、モジュロバイアスはないと言います。その理由を教えてください。　https://github.com/ai/nanoid/blob/main/index.browser.js#L61C4-L61C46
+
+NanoIDブラウザ実装コード（
+bytes[i] & mask）は、棄却サンプリングを行わない単純なマスキングを使用しているように見えますが、NanoIDは安全性が保証されるカスタムアルファベット長のみをサポートしているため、モジュロバイアスは回避されています。詳細についてはGitHubをご覧ください。
+
+6bit/1字＝URLセーフ文字[0-9A-Za-z\-_]
+126bit/21字=128bit近似(2のn乗かつUUID122bitより多い)
+
+128bitをBase64化すると末尾が2bit分の4字のうちいずれかしか出現しないため偏りが出てしまう。
+それを防ぐためにはBase64で使用する文字6bit単位のデータ長にする必要がある。
+UUIDv4で使用する122bitより長く、かつBase64URL文字を使うなら126bit分のデータ長が最適。
+普通データは8bit(1Byte)単位で取得するため、128bitが近似になるが、2bit余剰にある。
+余剰2bitを0で埋めて128bitとし、それを各Base文字列に変換できるようにしたい。
+Base[2,8,10,12,16,24,32,36,58,60,62,64]
+このうち2の冪乗はマスク計算で簡単に取得できる。
+
+```javascript
+function hasBias(range) {// range=2〜256。戻り値:false/true
+    if (!(Number.isSafeInteger(range) && 2<=range && range<=256)) {throw new TypeError(`rangeは2〜256のNumber型整数値であるべきです。`)}
+    return 0===(range & (range - 1)); // 2,4,8,16,32,64,128,256ならtrue,他はfalseを返す
+}
+```
+```javascript
+function getBitMask(range) {// ビットマスクを返す。range=2〜256。戻り値:1,3,7,15,31,63,127,255
+    if (!(Number.isSafeInteger(range) && 2<=range && range<=256)) {throw new TypeError(`rangeは2〜256のNumber型整数値であるべきです。`)}
+    return (2 << Math.log2(range - 1)) - 1;
+}
+```
+```javascript
+function randomBit(bits) {// 暗号論的乱数（均等分布（モジュロバイアス無し）） bits=1〜8(2,4,8,16,32,64,128,256)
+    if (!(Number.isSafeInteger(bits) && 0<bit && bit<9)) {throw new TypeError(`bitsは1〜8のNumber型整数値であるべきです。`)}
+    const b = crypto.getRandomValues(new Uint8Array(1))[0]; // 0〜255
+    return b & getBitMask(2**bits);
+}
+```
+
+```javascript
+function randomBit(bits) {// 暗号論的乱数（均等分布（モジュロバイアス無し）） bits=1〜8(2,4,8,16,32,64,128,256)
+    if (!(Number.isSafeInteger(bits) && 0<bit && bit<9)) {throw new TypeError(`bitsは1〜8のNumber型整数値であるべきです。`)}
+    const b = crypto.getRandomValues(new Uint8Array(1))[0]; // 0〜255
+    return b & ((2**bits)-1);
+}
+```
+```javascript
+function random256(range) {// 暗号論的乱数（均等分布（モジュロバイアス無し）） range=2〜256
+    if (!(Number.isSafeInteger(range) && 2<=range && range<=256)) {throw new TypeError(`rangeは2〜256のNumber型整数値であるべきです。`)}
+    let mask = (2 << Math.log2(range - 1)) - 1;
+    const b = crypto.getRandomValues(new Uint8Array(1))[0]; // 0〜255
+    return b & mask;
+}
+```
+
+```javascript
+function randomRange(range) {// 指定個数ある数を暗号論的乱数で返す（均等分布。モジュロバイアス無し）。リジェクションサンプリング。0〜range-1。
+    if (!Number.isSafeInteger(range)) {throw new TypeError(`rangeはNumber.isSafeInteger()が真を返す値であるべきです。`)}
+    if (0 < range && range < 257 && 0===(range & (range - 1))) {randomBits(Math.log2(range))}
+    
+}
+```
+```javascript
+function randomNumber(min, max) {
+    if (![min,max].every(v=>Number.isSafeInteger(v))) {throw new TypeError(`min,maxはNumber.isSafeInteger()が真を返す値であるべきです。`)}
+    if (max <= min) {throw new RangeError(`min,maxは min < max であるべきです。`)}
+    return randomRange(max - min);
+}
+```
