@@ -6,7 +6,7 @@ const _seq = (num)=>[...Array(num)].map((_,i)=>i); // n=5: 0,1,2,3,4
 const _deq = (num)=>[...Array(num)].map((_,i)=>num-i-1); // n=5: 4,3,2,1,0
 const _feq = (num,fn)=>[...Array(num)].map((_,i)=>fn(num,i));
 //const seq = (n)=>Number.isSafeInteger(n) ? (n < 0 ? _deq(n*-1) : _seq(n)) : ((()=>{throw new TypeError(`nは安全な整数値であるべきです。`)})());
-const seq = (n,f)=>Number.isSafeInteger(n) ? 'function'===typeof f && 0<n ? _feq(n,f) ? : (n<0 ? _deq(n*-1) : _seq(n)) : ((()=>{throw new TypeError(`nは安全な整数値であるべきです。第二引数に関数を指定した場合nは1以上の整数値であるべきです。`)})());
+const seq = (n,f)=>Number.isSafeInteger(n) ? ('function'===typeof f && 0<n ? _feq(n,f) : (n<0 ? _deq(n*-1) : _seq(n))) : ((()=>{throw new TypeError(`nは安全な整数値であるべきです。第二引数に関数を指定した場合nは1以上の整数値であるべきです。`)})());
 const seq2p = (num)=>seq(num,(n,i)=>2**i);
 const isSafeInt = (n)=>Number.isSafeInteger(n);
 const throwSafeInt = (n,N)=>{if (!isSafeInt(n)) {throw new TypeError(`${N ? N+'は' : ''}安全な整数値であるべきです。`)}};
@@ -24,27 +24,55 @@ class CSPRBGT {// Cryptographically Secure Pseudo Random Binary Generator Type
     static bits(bits) {return this.#random(Math.ceil(bits/8))}
     static bytes(bytes) {return this.#random(bytes)}
     static bits2p(bits) {
-        if (!(this.#isPowerOfTwo(bits) && 8<=bits)) {throw new TypeError(`bitsは8以上かつ2の冪乗値であるべきです。(8,16,32,64,128,256,512,1024等)`)}
+        if (!(isPowerOfTwo(bits) && 8<=bits)) {throw new TypeError(`bitsは8以上かつ2の冪乗値であるべきです。(8,16,32,64,128,256,512,1024等)`)}
         return this.bits(bits);
     }
     static bytes2p(bytes) {
-        if (!this.#isPowerOfTwo(bytes)) {throw new TypeError(`bytesは2の冪乗値であるべきです。(1,2,4,8,16,32,64,128,256,512,1024等)`)}
+        if (!isPowerOfTwo(bytes)) {throw new TypeError(`bytesは2の冪乗値であるべきです。(1,2,4,8,16,32,64,128,256,512,1024等)`)}
         return this.bytes(bytes)
     }
-    static #random(bytes) {return crypto.getRandomValues(new Uint8Array(Math.ceil(bytes)))}
+    //static #random(bytes) {return crypto.getRandomValues(new Uint8Array(Math.ceil(bytes)))}
+    static #random(bytes) {return crypto.getRandomValues(new Uint8Array(bytes))}
     static #randomB(buffer) {return crypto.getRandomValues(buffer)}
     static i8(len=1) {return this.#randomB(new Int8Array(len))}
-    static i16(len=1) {return this.#randomB(new Int8Array(len))}
-    static i32(len=1) {return this.#randomB(new Int8Array(len))}
-    static i64(len=1) {return this.#randomB(new BigInt8Array(len))}
+    static i16(len=1) {return this.#randomB(new Int16Array(len))}
+    static i32(len=1) {return this.#randomB(new Int32Array(len))}
+    static i64(len=1) {return this.#randomB(new BigInt64Array(len))}
     static u8(len=1) {return this.#randomB(new Uint8Array(len))}
     static u16(len=1) {return this.#randomB(new Uint16Array(len))}
     static u32(len=1) {return this.#randomB(new Uint32Array(len))}
-    static u64(len=1) {return this.#randomB(new BigUint8Array(len))}
-    static f32(len=1) {return this.#randomB(new Float32Array(len))}
-    static f64(len=1) {return this.#randomB(new Float64Array(len))}
-    static typed(len, isFloat=false, bits=8, signed=false) {return this.#randomB(new (this.typedT(isFloat, bits, signed))(len))}
+    static u64(len=1) {return this.#randomB(new BigUint64Array(len))}
+    static f32(len=1) {return this.uf32(len)}// 0〜1未満
+    static f64(len=1) {return this.uf64(len)}// 0〜1未満
+    static uf32(len=1) {return new Float32Array([...this.u32(len)].map(v=>v/0x100000000))}//     0〜1未満
+    static sf32(len=1) {return new Float32Array([...this.i32(len)].map(v=>v/0x080000000))}// -1〜0〜1未満
+    static uf64(len=1) {return new Float64Array([...this.u32(len)].map(v=>v/0x100000000))}//     0〜1未満
+    static sf64(len=1) {return new Float64Array([...this.i32(len)].map(v=>v/0x080000000))}// -1〜0〜1未満
+    // TypeError: can't convert BigInt to number
+//    static uf64(len=1) {return new Float64Array([...this.u64(len)].map(v=>v/0x10000000000000000n))}// 0〜1未満    
+//    static sf64(len=1) {return new Float64Array([...this.i64(len)].map(v=>v/0x10000000000000000n))}// -1〜0〜1未満
+    // DOMException: The type of an object is incompatible with the expected type of the parameter associated to the object
+//    static f32(len=1) {return this.#randomB(new Float32Array(len))}
+//    static f64(len=1) {return this.#randomB(new Float64Array(len))}
+    static get types() {return [Int8Array,Int16Array,Int32Array,Uint8ClampedArray,Uint8Array,Uint16Array,Uint32Array,Float32Array,Float64Array,BigInt64Array,BigUint64Array]}
+    static isTyped(T) {return this.types.some(t=>t===T)}
+    //static typed(len, isFloat=false, bits=8, signed=false) {return this.#randomB(new (this.typedT(isFloat, bits, signed))(len))}
+    static typed(len, isFloat=false, bits=8, signed=false) {return this.#randomB(this.isTyped(len) ? new len(isFloat) : new (this.typedT(isFloat, bits, signed))(len))}
     static typedT(isFloat=false, bits=8, signed=false) {
+        return this.isTyped(isFloat) ? isFloat : (8===bits
+            ? (signed ? Int8Array : Uint8Array)
+            : (16===bit
+                ? (signed ? Int16Array : Uint16Array)
+                : (32===bit
+                    ? (isFloat
+                        ? Float32Array
+                        : signed ? Int32Array : Uint32Array)
+                    : (64===bit
+                        ? (isFloat
+                            ? Float64Array
+                            : signed ? BigInt64Array : BigUint64Array)
+                        : (()=>{throw new TypeError(`指定されたTypedArrayは存在しないか未サポートです。`)})()))));
+        /*
         return 8===bits
             ? (signed ? Int8Array : Uint8Array)
             : (16===bit
@@ -58,6 +86,7 @@ class CSPRBGT {// Cryptographically Secure Pseudo Random Binary Generator Type
                             ? Float64Array
                             : signed ? BigInt64Array : BigUint64Array)
                         : (()=>{throw new TypeError(`指定されたTypedArrayは存在しないか未サポートです。`)})())));
+        */
     }
 }
 class CSPRBG {// Cryptographically Secure Pseudo Random Binary Generator
@@ -66,7 +95,7 @@ class CSPRBG {// Cryptographically Secure Pseudo Random Binary Generator
     static bits(bits) {throwSafeInt(bits,'bits'); return CSRBG(Math.ceil(bits/8), false, 8, false);}
     static bytes(bytes) {throwSafeInt(bytes,'bytes'); return new CSRBG(bytes, false, 8, false)}
     static bits2p(bits) {return (isPowerOfTwo(bits) && 8<=bits) ? this.bits(bits) : this.#TE(this.#MSG_BIT);}
-    static bytes2p(bytes) {return isPowerOfTwo(bytes) ? this.bytes(bytes) : this.#TE(this.#MSG_BYTES)}
+    static bytes2p(bytes) {return isPowerOfTwo(bytes) ? this.bytes(bytes) : this.#TE(this.#MSG_BYTE)}
     static #MSG_BIT = `bitsは8以上かつ2の冪乗値であるべきです。(${seq2p(11).filter(v=>8<=v)}等)`; // 8,16,32,64,128,256,512,1024
     static #MSG_BYTE = `bytesは2の冪乗値であるべきです。(${seq2p(11)}等)`; // 1,2,4,8,16,32,64,128,256,512,1024
     static #TE(m) {throw new TypeError(m)}
@@ -83,14 +112,19 @@ class CSPRBG {// Cryptographically Secure Pseudo Random Binary Generator
     constructor(len=1, isFloat=false, bits=8, signed=false) {
         this._ = {T:CSPRBG.typedT(isFloat, bits, signed), len:len}
     }
-    get v() {return this.#randomB(new T(this._.len))}
+    get #random() {return CSPRBGT.typed(this._.T, this._.len)}
+//CSPRBGT.typed(len, isFloat, bits, signed)
+    //get v() {return this.#randomB(new this._.T(this._.len))}
+    get v() {return this.#random}
     get() {return this.v}
-    gets(num=1) {return seq(num).map(n=>this.#randomB(new T(this._.len)))}
+    //gets(num=1) {return seq(num).map(n=>this.#randomB(new this._.T(this._.len)))}
+    gets(num=1) {return seq(num).map(n=>this.#random)}
     *gen(num=1) {
         if (!(Number.isSafeInteger(num) && 0<num)) {throw new TypeError(`numは1以上の整数値であるべきです。`)}
-        for (let i=0; i<num; i++) {yield this.#randomB(new T(this._.len)}
+        //for (let i=0; i<num; i++) {yield this.#randomB(new this._.T(this._.len))}
+        for (let i=0; i<num; i++) {yield this.#random}
     }
-    *[Symbol.iterator]() {while (true) {yield this.#randomB(new T(this._.len))}} // 無限ループになるので注意！
+    *[Symbol.iterator]() {while (true) {yield this.#random}} // 無限ループになるので注意！
 }
 /*
 // length/min,max/bits/bytes/typed
@@ -156,7 +190,7 @@ class RandomT { // 均等分布乱数
 }
 const RandomNum = new RandomT();
 class RandomBigIntT extends RandomT {
-    length(len) {return isSafeInt(len) ? super.length(len) : ('bigint'===typeof len ? this.range(0n, len-1n) : (()=>{throw new TypeError(`lenはNumberかBigIntであるべきです。`)})()}
+    length(len) {return isSafeInt(len) ? super.length(len) : ('bigint'===typeof len ? this.range(0n, len-1n) : (()=>{throw new TypeError(`lenはNumberかBigIntであるべきです。`)}))()}
     /**
      * min (含む) から max (含む) までの暗号論的に安全なBigInt乱数を生成する。
      * モジュロバイアスを避けるため、棄却サンプリングを使用する。
@@ -201,7 +235,7 @@ class BiasRandomT { // 偏り乱数
         }
     }
 }
-const BiasRandom = new BiasRandom();
+const BiasRandom = new BiasRandomT();
 class Lottery {
     constructor(items, isLoop=false, banReload=false) {// items:[{value:'A', waight:1},{value:'B', waight:4},{value:'C', waight:5}]  weightは札の枚数
         if (isLoop && banReload) {throw new TypeError(`isLoopとbanReloadの両方がtrueは禁止です。`)}
@@ -209,7 +243,7 @@ class Lottery {
         this._.now = this.#deepCopy();
 //        this._.now.shuffle();
     }
-    #deepCopy(v) {return 'structuredClone' in window ? structuredClone(v ?? this._.items) : JSON.parse(JSON.stringify(v ?? this._.items)}
+    #deepCopy(v) {return 'structuredClone' in window ? structuredClone(v ?? this._.items) : JSON.parse(JSON.stringify(v ?? this._.items))}
     get items() {return this.#deepCopy()}
     get deck() {return this._.now}
     shuffle() {this._.now.shuffle()}
@@ -239,13 +273,21 @@ class Lottery {
         }
     }
 }
-
+/*
 window.CSRBGT = CSRBGT;
 window.CSRBG = CSRBG; 
 window.RandomInt = RandomInt;
 window.BiasRandom = BiasRandom;
 window.Lottery = Lottery;
-window.Lottery = Lottery;
+*/
+// 命名規則: static class:全大文字, class:UpperCamel, instance:LowerCamel
+window.Random = Object.freeze({
+    BIN: CSPRBGT,
+    Bin: CSPRBG,
+    int: RandomInt,
+    bias: BiasRandom,
+    Lottery: Lottery 
+});
 /*
 function is2To256(v,n='range') {if (!(Number.isSafeInteger(v) && 2<=v && v<=256)) {throw new TypeError(`${n}は2〜256のNumber型整数値であるべきです。`)}}
 function hasBias(range) {// range=2〜256。戻り値:false/true
@@ -388,4 +430,4 @@ function genRandomNumber(byteCount, radix) {
   return BigInt('0x' + crypto.randomBytes(byteCount).toString('hex')).toString(radix)
 }
 */
-});
+})();

@@ -1,0 +1,100 @@
+<!doctype html>
+<html>
+<head prefix="og: https://ogp.me/ns#">
+<meta charset="utf-8">
+<title>random.js単体試験</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../css/style.css">
+<script src="../../lib/util/type.js"></script>
+<script src="../../lib/util/test/assertion.js"></script>
+<script src="random.js"></script>
+<script>
+window.addEventListener('DOMContentLoaded', async(event) => {
+    const a = new Assertion();
+    a.t('Random' in window);
+    a.t('BIN' in Random);
+    a.t('Bin' in Random);
+    a.t('int' in Random);
+    a.t('bias' in Random);
+    a.t('Lottery' in Random);
+    a.t(()=>{
+        const x = Random.BIN.i8();
+        return x instanceof Int8Array && 1===x.length && -((2**8)/2)<=x[0] && x[0]<=(2**8/2)-1;
+    });
+    a.e(RangeError, `invalid array length`, ()=>Random.BIN.i8(-1)); // new Int8Array(-1) の標準結果
+    a.t(()=>{
+        const x = Random.BIN.i8(0.5);// new Int8Array(-1) の標準結果。Math.ceil()されているっぽい？
+        return x instanceof Int8Array && 0===x.length;
+    });
+    a.t(()=>{
+        const x = Random.BIN.i8(0); // length=0になることもある。普通はnullで代用するはず。
+        return x instanceof Int8Array && 0===x.length;
+    });
+    a.t(()=>{
+        const x = Random.BIN.i16();
+        return x instanceof Int16Array && 1===x.length && -((2**16)/2)<=x[0] && x[0]<=(2**16/2)-1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.i32();
+        return x instanceof Int32Array && 1===x.length && -((2**32)/2)<=x[0] && x[0]<=(2**32/2)-1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.i64();
+        return x instanceof BigInt64Array && 1===x.length && -((2n**64n)/2n)<=x[0] && x[0]<=(2n**64n/2n)-1n;
+    });
+    a.t(()=>{
+        const x = Random.BIN.u8();
+        return x instanceof Uint8Array && 1===x.length && 0<=x[0] && x[0]<=(2**8)-1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.u16();
+        return x instanceof Uint16Array && 1===x.length && 0<=x[0] && x[0]<=(2**16)-1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.u32();
+        return x instanceof Uint32Array && 1===x.length && 0<=x[0] && x[0]<=(2**32)-1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.u64();
+        return x instanceof BigUint64Array && 1===x.length && 0n<=x[0] && x[0]<=(2n**64n)-1n;
+    });
+    a.t(()=>{
+        const x = Random.BIN.f32();
+        return x instanceof Float32Array && 1===x.length && 0<=x[0] && x[0]<1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.f64();
+        return x instanceof Float64Array && 1===x.length && 0<=x[0] && x[0]<1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.uf32();
+        return x instanceof Float32Array && 1===x.length && 0<=x[0] && x[0]<1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.uf64();
+        return x instanceof Float64Array && 1===x.length && 0<=x[0] && x[0]<1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.sf32();
+        return x instanceof Float32Array && 1===x.length && -1<=x[0] && x[0]<1;
+    });
+    a.t(()=>{
+        const x = Random.BIN.sf64();
+        return x instanceof Float64Array && 1===x.length && -1<=x[0] && x[0]<1;
+    });
+    console.log(Random.BIN.sf64()[0]);
+    /*
+    */
+
+
+    a.t(()=>{
+        return false;
+    });
+    a.fin();
+});
+</script>
+</head>
+<body>
+</body>
+</html>
+
